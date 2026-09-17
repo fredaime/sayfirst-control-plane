@@ -1,0 +1,4088 @@
+{
+  "components": {
+    "schemas": {
+      "approval-resolve-request": {
+        "additionalProperties": false,
+        "description": "One person's resolution of a pending approval.",
+        "properties": {
+          "approval_ref": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          },
+          "contract_generation": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "reason": {
+            "maxLength": 1024,
+            "type": "string"
+          },
+          "resolution": {
+            "enum": [
+              "approve",
+              "reject"
+            ],
+            "type": "string"
+          },
+          "scope": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "contract_generation",
+          "scope",
+          "approval_ref",
+          "resolution"
+        ],
+        "title": "Approval resolve request",
+        "type": "object",
+        "x-contract-generation": 1
+      },
+      "approval-result": {
+        "additionalProperties": true,
+        "description": "The authoritative state of a one-person approval.",
+        "properties": {
+          "approval_ref": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          },
+          "authority": {
+            "const": "authoritative"
+          },
+          "capability": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[a-z][a-z0-9]*(\\.[a-z][a-z0-9]*)*$",
+            "type": "string"
+          },
+          "contract_generation": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "deadline": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "decision_ref": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          },
+          "person": {
+            "description": "Who acted, on an approval a person resolved. Absent where nobody acted.",
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string"
+          },
+          "requested_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "resolution_reason": {
+            "maxLength": 1024,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "resolved_at": {
+            "format": "date-time",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "scope": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "pending",
+              "approved",
+              "rejected",
+              "expired",
+              "unknown"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "contract_generation",
+          "authority",
+          "approval_ref",
+          "decision_ref",
+          "scope",
+          "capability",
+          "state",
+          "requested_at",
+          "deadline",
+          "resolved_at",
+          "resolution_reason"
+        ],
+        "title": "Approval result",
+        "type": "object",
+        "x-contract-generation": 1
+      },
+      "decision-ask-request": {
+        "additionalProperties": false,
+        "description": "A question asked before an effect.",
+        "properties": {
+          "arguments_digest": {
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "capability": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[a-z][a-z0-9]*(\\.[a-z][a-z0-9]*)*$",
+            "type": "string"
+          },
+          "contract_generation": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "correlation": {
+            "maxLength": 128,
+            "type": "string"
+          },
+          "delegation": {
+            "$ref": "#/components/schemas/delegation"
+          },
+          "scope": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "contract_generation",
+          "capability"
+        ],
+        "title": "Decision ask request",
+        "type": "object",
+        "x-contract-generation": 1
+      },
+      "decision-record": {
+        "additionalProperties": true,
+        "description": "An append-only authoritative decision record.",
+        "properties": {
+          "arguments_digest": {
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "authority": {
+            "const": "authoritative"
+          },
+          "capability": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[a-z][a-z0-9]*(\\.[a-z][a-z0-9]*)*$",
+            "type": "string"
+          },
+          "contract_generation": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "correlation": {
+            "maxLength": 128,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "correlation_source": {
+            "description": "Who chose the bytes of correlation: the boundary that asked, or nobody. The daemon cannot prove a supplied value is an identifier; this marks its provenance.",
+            "enum": [
+              "boundary_supplied",
+              "absent"
+            ],
+            "type": "string"
+          },
+          "decided_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "decision_ref": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          },
+          "evaluation_recipe": {
+            "description": "The identifier of the evaluation recipe the decision was taken under; a reader that does not know it reports the record as unverifiable, never evaluates it under other semantics.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "grant_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "outcome": {
+            "enum": [
+              "allow",
+              "deny",
+              "suspend"
+            ],
+            "type": "string"
+          },
+          "policy_version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "principal": {
+            "additionalProperties": true,
+            "properties": {
+              "kind": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "name": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "uid": {
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "kind",
+              "uid",
+              "name"
+            ],
+            "type": "object"
+          },
+          "principal_references": {
+            "description": "The principal references the evaluation read, sorted and unique: the caller's own reference intersected with the references named by every rule for the asked scope and capability (M3). Recorded so a reader can re-derive the answer without a directory.",
+            "items": {
+              "maxLength": 262,
+              "minLength": 6,
+              "type": "string"
+            },
+            "maxItems": 131072,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "reason": {
+            "enum": [
+              "policy_allows",
+              "policy_denies",
+              "policy_absent",
+              "policy_requires_review",
+              "capability_unknown",
+              "approval_granted",
+              "approval_rejected"
+            ],
+            "type": "string"
+          },
+          "rule_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "scope": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "contract_generation",
+          "authority",
+          "decision_ref",
+          "scope",
+          "capability",
+          "outcome",
+          "reason",
+          "policy_version",
+          "decided_at",
+          "correlation",
+          "principal",
+          "arguments_digest",
+          "rule_id",
+          "grant_id"
+        ],
+        "title": "Decision record",
+        "type": "object",
+        "x-contract-generation": 1
+      },
+      "decision-result": {
+        "additionalProperties": true,
+        "description": "An immutable authoritative decision.",
+        "properties": {
+          "approval_ref": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "arguments_digest": {
+            "pattern": "^sha256:[0-9a-f]{64}$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "authority": {
+            "const": "authoritative"
+          },
+          "capability": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[a-z][a-z0-9]*(\\.[a-z][a-z0-9]*)*$",
+            "type": "string"
+          },
+          "contract_generation": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "correlation": {
+            "maxLength": 128,
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "correlation_source": {
+            "description": "Who chose the bytes of correlation: the boundary that asked, or nobody. The daemon cannot prove a supplied value is an identifier; this marks its provenance.",
+            "enum": [
+              "boundary_supplied",
+              "absent"
+            ],
+            "type": "string"
+          },
+          "decided_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "decision_ref": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          },
+          "evaluation_recipe": {
+            "description": "The identifier of the evaluation recipe the decision was taken under; a reader that does not know it reports the record as unverifiable, never evaluates it under other semantics.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "grant": {
+            "type": [
+              "object",
+              "null"
+            ]
+          },
+          "outcome": {
+            "enum": [
+              "allow",
+              "deny",
+              "suspend"
+            ],
+            "type": "string"
+          },
+          "policy_version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "principal": {
+            "additionalProperties": true,
+            "properties": {
+              "kind": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "name": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "uid": {
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "kind",
+              "uid",
+              "name"
+            ],
+            "type": "object"
+          },
+          "principal_references": {
+            "description": "The principal references the evaluation read, sorted and unique: the caller's own reference intersected with the references named by every rule for the asked scope and capability (M3). Recorded so a reader can re-derive the answer without a directory.",
+            "items": {
+              "maxLength": 262,
+              "minLength": 6,
+              "type": "string"
+            },
+            "maxItems": 131072,
+            "type": "array",
+            "uniqueItems": true
+          },
+          "reason": {
+            "enum": [
+              "policy_allows",
+              "policy_denies",
+              "policy_absent",
+              "policy_requires_review",
+              "capability_unknown",
+              "approval_granted",
+              "approval_rejected"
+            ],
+            "type": "string"
+          },
+          "rule_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "scope": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+            "type": "string"
+          }
+        },
+        "required": [
+          "contract_generation",
+          "authority",
+          "decision_ref",
+          "scope",
+          "capability",
+          "outcome",
+          "reason",
+          "policy_version",
+          "decided_at",
+          "correlation",
+          "principal",
+          "arguments_digest",
+          "rule_id",
+          "grant"
+        ],
+        "title": "Decision result",
+        "type": "object",
+        "x-contract-generation": 1
+      },
+      "delegation": {
+        "additionalProperties": false,
+        "description": "Declared by the peer, not verified by the daemon. Every length bound is counted in UTF-8 bytes and published as x-max-bytes; maxLength is the weaker code-point bound a generic validator can check on its own.",
+        "properties": {
+          "chain": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "type": "string",
+                  "x-max-bytes": 64
+                },
+                "name": {
+                  "maxLength": 256,
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "x-max-bytes": 256
+                },
+                "uid": {
+                  "minimum": 0,
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "via": {
+                  "maxLength": 64,
+                  "minLength": 1,
+                  "type": "string",
+                  "x-documented-values": [
+                    "privilege_tool",
+                    "scheduler",
+                    "build_runner"
+                  ],
+                  "x-max-bytes": 64
+                }
+              },
+              "required": [
+                "kind",
+                "name",
+                "uid",
+                "via"
+              ],
+              "type": "object"
+            },
+            "maxItems": 4,
+            "minItems": 1,
+            "type": "array"
+          },
+          "status": {
+            "minLength": 1,
+            "type": "string",
+            "x-documented-values": [
+              "declared"
+            ]
+          }
+        },
+        "required": [
+          "chain"
+        ],
+        "title": "Delegation",
+        "type": "object",
+        "x-contract-generation": 1
+      },
+      "evidence-entry": {
+        "$defs": {
+          "capture": {
+            "oneOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "bytes": {
+                    "maximum": 65536,
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "captured": {
+                    "const": true
+                  },
+                  "content": {
+                    "description": "Captured payload after the configured provider ran.",
+                    "type": "string"
+                  },
+                  "encoding": {
+                    "const": "base64"
+                  },
+                  "provider": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "truncated": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "captured",
+                  "provider",
+                  "bytes",
+                  "truncated",
+                  "content"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "captured": {
+                    "const": false
+                  },
+                  "provider": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "withheld": {
+                    "const": "redaction_failed"
+                  }
+                },
+                "required": [
+                  "captured",
+                  "provider",
+                  "withheld"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "composition-body": {
+            "additionalProperties": false,
+            "properties": {
+              "providers": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "interface": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "provider": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "version": {
+                      "minimum": 1,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "interface",
+                    "version",
+                    "provider"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "recording_epoch": {
+                "description": "The recording epoch the writer was in; an epoch that did not close cleanly is unknown coverage for every asynchronous entry inside it.",
+                "minLength": 1,
+                "type": "string"
+              }
+            },
+            "required": [
+              "providers"
+            ],
+            "type": "object"
+          },
+          "effect-body": {
+            "description": "The historical reader shape, or the new-writer shape; a body that mixes the two is neither.",
+            "oneOf": [
+              {
+                "additionalProperties": false,
+                "description": "An effect a generation-one writer recorded before the durable decision lifecycle; admitted by the reader, never synthesised into the new shape.",
+                "properties": {
+                  "capability": {
+                    "maxLength": 128,
+                    "minLength": 1,
+                    "pattern": "^[a-z][a-z0-9]*(\\.[a-z][a-z0-9]*)*$",
+                    "type": "string"
+                  },
+                  "capture": {
+                    "$ref": "#/$defs/capture"
+                  },
+                  "decided_at": {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  "decision_id": {
+                    "maxLength": 128,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "outcome": {
+                    "enum": [
+                      "allow",
+                      "deny",
+                      "suspend"
+                    ],
+                    "type": "string"
+                  },
+                  "policy_version": {
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "capability",
+                  "decision_id",
+                  "outcome",
+                  "decided_at",
+                  "policy_version"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "description": "An effect a new writer records: the decision's answer and inputs copied inside the hashed body, and its position in the durable decision store.",
+                "properties": {
+                  "arguments_digest": {
+                    "pattern": "^sha256:[0-9a-f]{64}$",
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "capability": {
+                    "maxLength": 128,
+                    "minLength": 1,
+                    "pattern": "^[a-z][a-z0-9]*(\\.[a-z][a-z0-9]*)*$",
+                    "type": "string"
+                  },
+                  "capture": {
+                    "$ref": "#/$defs/capture"
+                  },
+                  "correlation": {
+                    "maxLength": 128,
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "correlation_source": {
+                    "description": "Who chose the bytes of correlation: the boundary that asked, or nobody. The daemon cannot prove a supplied value is an identifier; this marks its provenance.",
+                    "enum": [
+                      "boundary_supplied",
+                      "absent"
+                    ],
+                    "type": "string"
+                  },
+                  "decided_at": {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  "decision_id": {
+                    "maxLength": 128,
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "decision_position": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "position": {
+                        "minimum": 1,
+                        "type": "integer"
+                      },
+                      "store_id": {
+                        "minLength": 1,
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "store_id",
+                      "position"
+                    ],
+                    "type": "object"
+                  },
+                  "evaluation_recipe": {
+                    "description": "The identifier of the evaluation recipe the decision was taken under; a reader that does not know it reports the record as unverifiable, never evaluates it under other semantics.",
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "outcome": {
+                    "enum": [
+                      "allow",
+                      "deny",
+                      "suspend"
+                    ],
+                    "type": "string"
+                  },
+                  "policy_version": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "principal_references": {
+                    "description": "The principal references the evaluation read, sorted and unique: the caller's own reference intersected with the references named by every rule for the asked scope and capability (M3). Recorded so a reader can re-derive the answer without a directory.",
+                    "items": {
+                      "maxLength": 262,
+                      "minLength": 6,
+                      "type": "string"
+                    },
+                    "maxItems": 131072,
+                    "type": "array",
+                    "uniqueItems": true
+                  },
+                  "reason": {
+                    "enum": [
+                      "policy_allows",
+                      "policy_denies",
+                      "policy_absent",
+                      "policy_requires_review",
+                      "capability_unknown",
+                      "approval_granted",
+                      "approval_rejected"
+                    ],
+                    "type": "string"
+                  },
+                  "recording_epoch": {
+                    "description": "The recording epoch the writer was in; an epoch that did not close cleanly is unknown coverage for every asynchronous entry inside it.",
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "rule_id": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "capability",
+                  "decision_id",
+                  "outcome",
+                  "decided_at",
+                  "policy_version",
+                  "reason",
+                  "rule_id",
+                  "arguments_digest",
+                  "correlation",
+                  "correlation_source",
+                  "principal_references",
+                  "evaluation_recipe",
+                  "decision_position"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "gap-body": {
+            "additionalProperties": false,
+            "properties": {
+              "accounting": {
+                "description": "What the count counts: physical records the bytes could not identify, known decisions by identity, or other counted events. Physical and decision counts may describe one failure and are never summed; a historical marker without this member has unknown accounting.",
+                "enum": [
+                  "physical_record",
+                  "decision",
+                  "event"
+                ],
+                "type": "string"
+              },
+              "count": {
+                "minimum": 1,
+                "type": "integer"
+              },
+              "decision_ids": {
+                "description": "The identities of known decisions this marker declares lost, sorted by position and paired one to one with decision_positions; a loss larger than the bound is several markers, never an id-less one.",
+                "items": {
+                  "maxLength": 128,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "maxItems": 8192,
+                "minItems": 1,
+                "type": "array",
+                "uniqueItems": true
+              },
+              "decision_positions": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "position": {
+                      "minimum": 1,
+                      "type": "integer"
+                    },
+                    "store_id": {
+                      "minLength": 1,
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "store_id",
+                    "position"
+                  ],
+                  "type": "object"
+                },
+                "maxItems": 8192,
+                "minItems": 1,
+                "type": "array"
+              },
+              "first_at": {
+                "format": "date-time",
+                "type": "string"
+              },
+              "kinds": {
+                "additionalProperties": {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "type": "object"
+              },
+              "last_at": {
+                "format": "date-time",
+                "type": "string"
+              },
+              "reason": {
+                "enum": [
+                  "dropped",
+                  "purged",
+                  "torn",
+                  "unflushed"
+                ],
+                "type": "string"
+              },
+              "recording_epoch": {
+                "description": "The recording epoch the writer was in; an epoch that did not close cleanly is unknown coverage for every asynchronous entry inside it.",
+                "minLength": 1,
+                "type": "string"
+              }
+            },
+            "required": [
+              "reason",
+              "count",
+              "first_at",
+              "last_at",
+              "kinds"
+            ],
+            "type": "object"
+          },
+          "grade-body": {
+            "additionalProperties": false,
+            "properties": {
+              "basis": {
+                "enum": [
+                  "caller_can_write",
+                  "caller_cannot_write",
+                  "access_not_established"
+                ],
+                "type": "string"
+              },
+              "evaluated_at": {
+                "format": "date-time",
+                "type": "string"
+              },
+              "grade": {
+                "enum": [
+                  "unverified",
+                  "observability",
+                  "evidence"
+                ],
+                "type": "string"
+              },
+              "paths_inspected": {
+                "minimum": 0,
+                "type": "integer"
+              },
+              "recording_epoch": {
+                "description": "The recording epoch the writer was in; an epoch that did not close cleanly is unknown coverage for every asynchronous entry inside it.",
+                "minLength": 1,
+                "type": "string"
+              }
+            },
+            "required": [
+              "grade",
+              "basis",
+              "evaluated_at",
+              "paths_inspected"
+            ],
+            "type": "object"
+          },
+          "principal": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "kind": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "via": {
+                "items": {
+                  "$ref": "#/$defs/principal"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "kind",
+              "id",
+              "via"
+            ],
+            "type": "object"
+          },
+          "recovery-body": {
+            "description": "A synchronous recovery marker: the once-only baseline, or the closure of a producer epoch, clean or unclean. Written by the daemon on its own connection, never by the asynchronous emitter.",
+            "oneOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "established_at": {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  "event": {
+                    "const": "baseline"
+                  },
+                  "first_covered_sequence": {
+                    "minimum": 1,
+                    "type": "integer"
+                  },
+                  "first_decision_position": {
+                    "const": 1
+                  },
+                  "legacy_effects_without_authority": {
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "recording_epoch": {
+                    "description": "The recording epoch the writer was in; an epoch that did not close cleanly is unknown coverage for every asynchronous entry inside it.",
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "store_id": {
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "event",
+                  "store_id",
+                  "first_decision_position",
+                  "first_covered_sequence",
+                  "legacy_effects_without_authority",
+                  "established_at",
+                  "recording_epoch"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "epoch_id": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "event": {
+                    "const": "clean_stop"
+                  },
+                  "from_sequence": {
+                    "minimum": 1,
+                    "type": "integer"
+                  },
+                  "recording_epoch": {
+                    "description": "The recording epoch the writer was in; an epoch that did not close cleanly is unknown coverage for every asynchronous entry inside it.",
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "through_sequence": {
+                    "minimum": 1,
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "event",
+                  "epoch_id",
+                  "from_sequence",
+                  "through_sequence",
+                  "recording_epoch"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "coverage": {
+                    "const": "unknown"
+                  },
+                  "epoch_id": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "event": {
+                    "const": "unclean_stop"
+                  },
+                  "from_sequence": {
+                    "minimum": 1,
+                    "type": "integer"
+                  },
+                  "lost_event_count": {
+                    "description": "Deliberately null: an unclean stop cannot inventory what the asynchronous emitter held.",
+                    "type": "null"
+                  },
+                  "possibly_lost_kinds": {
+                    "items": {
+                      "enum": [
+                        "effect",
+                        "grade",
+                        "composition",
+                        "gap",
+                        "recovery"
+                      ],
+                      "type": "string"
+                    },
+                    "minItems": 4,
+                    "type": "array",
+                    "uniqueItems": true
+                  },
+                  "recording_epoch": {
+                    "description": "The recording epoch the writer was in; an epoch that did not close cleanly is unknown coverage for every asynchronous entry inside it.",
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "through_sequence": {
+                    "minimum": 1,
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "event",
+                  "epoch_id",
+                  "from_sequence",
+                  "through_sequence",
+                  "lost_event_count",
+                  "possibly_lost_kinds",
+                  "coverage",
+                  "recording_epoch"
+                ],
+                "type": "object"
+              }
+            ]
+          }
+        },
+        "additionalProperties": true,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "const": "effect"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "body": {
+                  "$ref": "#/$defs/effect-body"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "const": "grade"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "body": {
+                  "$ref": "#/$defs/grade-body"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "const": "gap"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "body": {
+                  "$ref": "#/$defs/gap-body"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "const": "composition"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "body": {
+                  "$ref": "#/$defs/composition-body"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "const": "recovery"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "body": {
+                  "$ref": "#/$defs/recovery-body"
+                }
+              }
+            }
+          }
+        ],
+        "description": "One immutable entry in a scope evidence chain, as a reader admits it: a historical body without the block 2.7 members and a new-writer body alike. The new-writer schema, evidence-entry-writer, requires them.",
+        "properties": {
+          "body": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/effect-body"
+              },
+              {
+                "$ref": "#/$defs/grade-body"
+              },
+              {
+                "$ref": "#/$defs/gap-body"
+              },
+              {
+                "$ref": "#/$defs/composition-body"
+              },
+              {
+                "$ref": "#/$defs/recovery-body"
+              }
+            ]
+          },
+          "connection_id": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "entry_hash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "effect",
+              "grade",
+              "gap",
+              "composition",
+              "recovery"
+            ],
+            "type": "string"
+          },
+          "preimage_version": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "previous_hash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "principal": {
+            "$ref": "#/$defs/principal"
+          },
+          "recorded_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "scope": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+            "type": "string"
+          },
+          "sequence": {
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "scope",
+          "kind",
+          "recorded_at",
+          "connection_id",
+          "principal",
+          "body",
+          "sequence",
+          "previous_hash",
+          "entry_hash",
+          "preimage_version"
+        ],
+        "title": "Evidence entry",
+        "type": "object",
+        "x-contract-generation": 1
+      },
+      "evidence-entry-writer": {
+        "$defs": {
+          "capture": {
+            "oneOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "bytes": {
+                    "maximum": 65536,
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "captured": {
+                    "const": true
+                  },
+                  "content": {
+                    "description": "Captured payload after the configured provider ran.",
+                    "type": "string"
+                  },
+                  "encoding": {
+                    "const": "base64"
+                  },
+                  "provider": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "truncated": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "captured",
+                  "provider",
+                  "bytes",
+                  "truncated",
+                  "content"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "captured": {
+                    "const": false
+                  },
+                  "provider": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "withheld": {
+                    "const": "redaction_failed"
+                  }
+                },
+                "required": [
+                  "captured",
+                  "provider",
+                  "withheld"
+                ],
+                "type": "object"
+              }
+            ]
+          },
+          "composition-body": {
+            "additionalProperties": false,
+            "properties": {
+              "providers": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "interface": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "provider": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "version": {
+                      "minimum": 1,
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "interface",
+                    "version",
+                    "provider"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "recording_epoch": {
+                "description": "The recording epoch the writer was in; an epoch that did not close cleanly is unknown coverage for every asynchronous entry inside it.",
+                "minLength": 1,
+                "type": "string"
+              }
+            },
+            "required": [
+              "providers"
+            ],
+            "type": "object"
+          },
+          "effect-body": {
+            "additionalProperties": false,
+            "description": "An effect a new writer records: the decision's answer and inputs copied inside the hashed body, and its position in the durable decision store.",
+            "properties": {
+              "arguments_digest": {
+                "pattern": "^sha256:[0-9a-f]{64}$",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "capability": {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9]*(\\.[a-z][a-z0-9]*)*$",
+                "type": "string"
+              },
+              "capture": {
+                "$ref": "#/$defs/capture"
+              },
+              "correlation": {
+                "maxLength": 128,
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "correlation_source": {
+                "description": "Who chose the bytes of correlation: the boundary that asked, or nobody. The daemon cannot prove a supplied value is an identifier; this marks its provenance.",
+                "enum": [
+                  "boundary_supplied",
+                  "absent"
+                ],
+                "type": "string"
+              },
+              "decided_at": {
+                "format": "date-time",
+                "type": "string"
+              },
+              "decision_id": {
+                "maxLength": 128,
+                "minLength": 1,
+                "type": "string"
+              },
+              "decision_position": {
+                "additionalProperties": false,
+                "properties": {
+                  "position": {
+                    "minimum": 1,
+                    "type": "integer"
+                  },
+                  "store_id": {
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "store_id",
+                  "position"
+                ],
+                "type": "object"
+              },
+              "evaluation_recipe": {
+                "description": "The identifier of the evaluation recipe the decision was taken under; a reader that does not know it reports the record as unverifiable, never evaluates it under other semantics.",
+                "minLength": 1,
+                "type": "string"
+              },
+              "outcome": {
+                "enum": [
+                  "allow",
+                  "deny",
+                  "suspend"
+                ],
+                "type": "string"
+              },
+              "policy_version": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "principal_references": {
+                "description": "The principal references the evaluation read, sorted and unique: the caller's own reference intersected with the references named by every rule for the asked scope and capability (M3). Recorded so a reader can re-derive the answer without a directory.",
+                "items": {
+                  "maxLength": 262,
+                  "minLength": 6,
+                  "type": "string"
+                },
+                "maxItems": 131072,
+                "type": "array",
+                "uniqueItems": true
+              },
+              "reason": {
+                "enum": [
+                  "policy_allows",
+                  "policy_denies",
+                  "policy_absent",
+                  "policy_requires_review",
+                  "capability_unknown",
+                  "approval_granted",
+                  "approval_rejected"
+                ],
+                "type": "string"
+              },
+              "recording_epoch": {
+                "description": "The recording epoch the writer was in; an epoch that did not close cleanly is unknown coverage for every asynchronous entry inside it.",
+                "minLength": 1,
+                "type": "string"
+              },
+              "rule_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "capability",
+              "decision_id",
+              "outcome",
+              "decided_at",
+              "policy_version",
+              "reason",
+              "rule_id",
+              "arguments_digest",
+              "correlation",
+              "correlation_source",
+              "principal_references",
+              "evaluation_recipe",
+              "decision_position"
+            ],
+            "type": "object"
+          },
+          "gap-body": {
+            "additionalProperties": false,
+            "properties": {
+              "accounting": {
+                "description": "What the count counts: physical records the bytes could not identify, known decisions by identity, or other counted events. Physical and decision counts may describe one failure and are never summed; a historical marker without this member has unknown accounting.",
+                "enum": [
+                  "physical_record",
+                  "decision",
+                  "event"
+                ],
+                "type": "string"
+              },
+              "count": {
+                "minimum": 1,
+                "type": "integer"
+              },
+              "decision_ids": {
+                "description": "The identities of known decisions this marker declares lost, sorted by position and paired one to one with decision_positions; a loss larger than the bound is several markers, never an id-less one.",
+                "items": {
+                  "maxLength": 128,
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "maxItems": 8192,
+                "minItems": 1,
+                "type": "array",
+                "uniqueItems": true
+              },
+              "decision_positions": {
+                "items": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "position": {
+                      "minimum": 1,
+                      "type": "integer"
+                    },
+                    "store_id": {
+                      "minLength": 1,
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "store_id",
+                    "position"
+                  ],
+                  "type": "object"
+                },
+                "maxItems": 8192,
+                "minItems": 1,
+                "type": "array"
+              },
+              "first_at": {
+                "format": "date-time",
+                "type": "string"
+              },
+              "kinds": {
+                "additionalProperties": {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "type": "object"
+              },
+              "last_at": {
+                "format": "date-time",
+                "type": "string"
+              },
+              "reason": {
+                "enum": [
+                  "dropped",
+                  "purged",
+                  "torn",
+                  "unflushed"
+                ],
+                "type": "string"
+              },
+              "recording_epoch": {
+                "description": "The recording epoch the writer was in; an epoch that did not close cleanly is unknown coverage for every asynchronous entry inside it.",
+                "minLength": 1,
+                "type": "string"
+              }
+            },
+            "required": [
+              "reason",
+              "count",
+              "first_at",
+              "last_at",
+              "kinds"
+            ],
+            "type": "object"
+          },
+          "grade-body": {
+            "additionalProperties": false,
+            "properties": {
+              "basis": {
+                "enum": [
+                  "caller_can_write",
+                  "caller_cannot_write",
+                  "access_not_established"
+                ],
+                "type": "string"
+              },
+              "evaluated_at": {
+                "format": "date-time",
+                "type": "string"
+              },
+              "grade": {
+                "enum": [
+                  "unverified",
+                  "observability",
+                  "evidence"
+                ],
+                "type": "string"
+              },
+              "paths_inspected": {
+                "minimum": 0,
+                "type": "integer"
+              },
+              "recording_epoch": {
+                "description": "The recording epoch the writer was in; an epoch that did not close cleanly is unknown coverage for every asynchronous entry inside it.",
+                "minLength": 1,
+                "type": "string"
+              }
+            },
+            "required": [
+              "grade",
+              "basis",
+              "evaluated_at",
+              "paths_inspected"
+            ],
+            "type": "object"
+          },
+          "principal": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "kind": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "via": {
+                "items": {
+                  "$ref": "#/$defs/principal"
+                },
+                "type": "array"
+              }
+            },
+            "required": [
+              "kind",
+              "id",
+              "via"
+            ],
+            "type": "object"
+          },
+          "recovery-body": {
+            "description": "A synchronous recovery marker: the once-only baseline, or the closure of a producer epoch, clean or unclean. Written by the daemon on its own connection, never by the asynchronous emitter.",
+            "oneOf": [
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "established_at": {
+                    "format": "date-time",
+                    "type": "string"
+                  },
+                  "event": {
+                    "const": "baseline"
+                  },
+                  "first_covered_sequence": {
+                    "minimum": 1,
+                    "type": "integer"
+                  },
+                  "first_decision_position": {
+                    "const": 1
+                  },
+                  "legacy_effects_without_authority": {
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  "recording_epoch": {
+                    "description": "The recording epoch the writer was in; an epoch that did not close cleanly is unknown coverage for every asynchronous entry inside it.",
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "store_id": {
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "event",
+                  "store_id",
+                  "first_decision_position",
+                  "first_covered_sequence",
+                  "legacy_effects_without_authority",
+                  "established_at",
+                  "recording_epoch"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "epoch_id": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "event": {
+                    "const": "clean_stop"
+                  },
+                  "from_sequence": {
+                    "minimum": 1,
+                    "type": "integer"
+                  },
+                  "recording_epoch": {
+                    "description": "The recording epoch the writer was in; an epoch that did not close cleanly is unknown coverage for every asynchronous entry inside it.",
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "through_sequence": {
+                    "minimum": 1,
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "event",
+                  "epoch_id",
+                  "from_sequence",
+                  "through_sequence",
+                  "recording_epoch"
+                ],
+                "type": "object"
+              },
+              {
+                "additionalProperties": false,
+                "properties": {
+                  "coverage": {
+                    "const": "unknown"
+                  },
+                  "epoch_id": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "event": {
+                    "const": "unclean_stop"
+                  },
+                  "from_sequence": {
+                    "minimum": 1,
+                    "type": "integer"
+                  },
+                  "lost_event_count": {
+                    "description": "Deliberately null: an unclean stop cannot inventory what the asynchronous emitter held.",
+                    "type": "null"
+                  },
+                  "possibly_lost_kinds": {
+                    "items": {
+                      "enum": [
+                        "effect",
+                        "grade",
+                        "composition",
+                        "gap",
+                        "recovery"
+                      ],
+                      "type": "string"
+                    },
+                    "minItems": 4,
+                    "type": "array",
+                    "uniqueItems": true
+                  },
+                  "recording_epoch": {
+                    "description": "The recording epoch the writer was in; an epoch that did not close cleanly is unknown coverage for every asynchronous entry inside it.",
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "through_sequence": {
+                    "minimum": 1,
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "event",
+                  "epoch_id",
+                  "from_sequence",
+                  "through_sequence",
+                  "lost_event_count",
+                  "possibly_lost_kinds",
+                  "coverage",
+                  "recording_epoch"
+                ],
+                "type": "object"
+              }
+            ]
+          }
+        },
+        "additionalProperties": true,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "const": "effect"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "body": {
+                  "$ref": "#/$defs/effect-body"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "const": "grade"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "body": {
+                  "$ref": "#/$defs/grade-body"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "const": "gap"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "body": {
+                  "$ref": "#/$defs/gap-body"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "const": "composition"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "body": {
+                  "$ref": "#/$defs/composition-body"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "const": "recovery"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "body": {
+                  "$ref": "#/$defs/recovery-body"
+                }
+              }
+            }
+          }
+        ],
+        "description": "One immutable entry as a writer of the durable decision lifecycle records it: an effect body carries the decision's reason, rule, digest, correlation and its source, principal references, evaluation recipe and store position. A reader validates against evidence-entry, which also admits the historical shape (article 13).",
+        "properties": {
+          "body": {
+            "oneOf": [
+              {
+                "$ref": "#/$defs/effect-body"
+              },
+              {
+                "$ref": "#/$defs/grade-body"
+              },
+              {
+                "$ref": "#/$defs/gap-body"
+              },
+              {
+                "$ref": "#/$defs/composition-body"
+              },
+              {
+                "$ref": "#/$defs/recovery-body"
+              }
+            ]
+          },
+          "connection_id": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "entry_hash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "effect",
+              "grade",
+              "gap",
+              "composition",
+              "recovery"
+            ],
+            "type": "string"
+          },
+          "preimage_version": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "previous_hash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "principal": {
+            "$ref": "#/$defs/principal"
+          },
+          "recorded_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "scope": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+            "type": "string"
+          },
+          "sequence": {
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "scope",
+          "kind",
+          "recorded_at",
+          "connection_id",
+          "principal",
+          "body",
+          "sequence",
+          "previous_hash",
+          "entry_hash",
+          "preimage_version"
+        ],
+        "title": "Evidence entry (new writer)",
+        "type": "object",
+        "x-contract-generation": 1
+      },
+      "evidence-export-result": {
+        "additionalProperties": true,
+        "description": "A deterministic bounded raw evidence bundle.",
+        "properties": {
+          "contract_version": {
+            "const": "1",
+            "type": "string"
+          },
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/evidence-entry"
+            },
+            "maxItems": 10000,
+            "type": "array"
+          },
+          "entry_count": {
+            "maximum": 10000,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "from_sequence": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "manifest_hash": {
+            "pattern": "^[0-9a-f]{64}$",
+            "type": "string"
+          },
+          "manifest_version": {
+            "description": "Which manifest recipe the digest was taken under. A bundle without it predates v3 and is tried against v1 and v2.",
+            "minLength": 1,
+            "type": "string"
+          },
+          "next_from": {
+            "minimum": 1,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "policy_versions": {
+            "additionalProperties": {
+              "oneOf": [
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "content": {
+                      "contentEncoding": "base64",
+                      "description": "The exact archived bytes, base64 without newlines; the whole administrator policy file, which discloses every rule and reason it holds to every reader admitted to export (A6).",
+                      "type": "string"
+                    },
+                    "state": {
+                      "const": "present"
+                    }
+                  },
+                  "required": [
+                    "state",
+                    "content"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "state": {
+                      "const": "absent"
+                    }
+                  },
+                  "required": [
+                    "state"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "state": {
+                      "const": "damaged"
+                    }
+                  },
+                  "required": [
+                    "state"
+                  ],
+                  "type": "object"
+                }
+              ]
+            },
+            "description": "One key for every distinct policy version an included effect names, with the bytes or the reason there are none. A missing key is a verification failure, never a successful empty map.",
+            "propertyNames": {
+              "pattern": "^sha256:[0-9a-f]{64}$"
+            },
+            "type": "object"
+          },
+          "recovery_context": {
+            "description": "Exact entries after the included range, contiguous from its last hash, carried so a verifier can see the closure of the epochs the range represents; supporting context, never additional decision coverage.",
+            "items": {
+              "$ref": "#/components/schemas/evidence-entry"
+            },
+            "type": "array"
+          },
+          "scope": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+            "type": "string"
+          },
+          "to_sequence": {
+            "minimum": 1,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "verification": {
+            "$ref": "#/components/schemas/evidence-verdict"
+          }
+        },
+        "required": [
+          "contract_version",
+          "scope",
+          "from_sequence",
+          "to_sequence",
+          "entry_count",
+          "entries",
+          "verification",
+          "manifest_hash",
+          "next_from"
+        ],
+        "title": "Evidence export result",
+        "type": "object",
+        "x-contract-generation": 1
+      },
+      "evidence-page-result": {
+        "additionalProperties": true,
+        "description": "A bounded raw range and its verification.",
+        "properties": {
+          "contract_version": {
+            "const": "1",
+            "type": "string"
+          },
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/evidence-entry"
+            },
+            "maxItems": 100,
+            "type": "array"
+          },
+          "from_sequence": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "next_from": {
+            "minimum": 1,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "scope": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+            "type": "string"
+          },
+          "to_sequence": {
+            "minimum": 1,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "verification": {
+            "$ref": "#/components/schemas/evidence-verdict"
+          }
+        },
+        "required": [
+          "contract_version",
+          "scope",
+          "from_sequence",
+          "to_sequence",
+          "entries",
+          "verification",
+          "next_from"
+        ],
+        "title": "Evidence page result",
+        "type": "object",
+        "x-contract-generation": 1
+      },
+      "evidence-verdict": {
+        "additionalProperties": true,
+        "description": "Verification of one range of one scope chain.",
+        "properties": {
+          "condition": {
+            "enum": [
+              "intact",
+              "broken_at",
+              "gap_at",
+              "unverifiable"
+            ],
+            "type": "string"
+          },
+          "covers_an_entry": {
+            "type": "boolean"
+          },
+          "declared_gaps": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "count": {
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "reason": {
+                  "enum": [
+                    "dropped",
+                    "purged",
+                    "torn",
+                    "unflushed"
+                  ],
+                  "type": "string"
+                },
+                "sequence": {
+                  "minimum": 1,
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "sequence",
+                "reason",
+                "count"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "expected": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "found": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "from_sequence": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "grades": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "connection_id": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "grade": {
+                  "enum": [
+                    "unverified",
+                    "observability",
+                    "evidence"
+                  ],
+                  "type": "string"
+                }
+              },
+              "required": [
+                "connection_id",
+                "grade"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "scope": {
+            "maxLength": 128,
+            "minLength": 1,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+            "type": "string"
+          },
+          "sequence": {
+            "minimum": 1,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "to_sequence": {
+            "minimum": 1,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "up_to": {
+            "minimum": 1,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "scope",
+          "condition",
+          "from_sequence",
+          "to_sequence",
+          "up_to",
+          "sequence",
+          "expected",
+          "found",
+          "version",
+          "covers_an_entry",
+          "declared_gaps",
+          "grades"
+        ],
+        "title": "Evidence verdict",
+        "type": "object",
+        "x-contract-generation": 1
+      },
+      "grant": {
+        "additionalProperties": false,
+        "description": "A decision cached under exact conditions for a bounded lifetime.",
+        "properties": {
+          "conditions": {
+            "additionalProperties": false,
+            "properties": {
+              "arguments_digest": {
+                "pattern": "^sha256:[0-9a-f]{64}$",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "capability": {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9]*(\\.[a-z][a-z0-9]*)*$",
+                "type": "string"
+              },
+              "principal_reference": {
+                "maxLength": 261,
+                "minLength": 6,
+                "pattern": "^user:[^:]+$",
+                "type": "string"
+              },
+              "scope": {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "scope",
+              "capability",
+              "principal_reference",
+              "arguments_digest"
+            ],
+            "type": "object"
+          },
+          "decision_ref": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "grant_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          },
+          "heartbeat_seconds": {
+            "maximum": 60,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "issued_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "lifetime_seconds": {
+            "maximum": 86400,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "policy_version": {
+            "minLength": 1,
+            "type": "string"
+          }
+        },
+        "required": [
+          "grant_id",
+          "decision_ref",
+          "policy_version",
+          "issued_at",
+          "lifetime_seconds",
+          "expires_at",
+          "heartbeat_seconds",
+          "conditions"
+        ],
+        "title": "Grant",
+        "type": "object",
+        "x-contract-generation": 1
+      },
+      "grant-signal": {
+        "additionalProperties": true,
+        "description": "A heartbeat or terminal change for one issued grant.",
+        "properties": {
+          "at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "contract_generation": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "grant_id": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "heartbeat",
+              "grant_ended"
+            ],
+            "type": "string"
+          },
+          "policy_version": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "reason": {
+            "enum": [
+              "policy_version_changed",
+              "expired",
+              "daemon_stopping"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "contract_generation",
+          "kind",
+          "grant_id",
+          "policy_version",
+          "at"
+        ],
+        "title": "Grant signal",
+        "type": "object",
+        "x-contract-generation": 1
+      },
+      "peer": {
+        "additionalProperties": true,
+        "description": "What the kernel recorded for the process that opened the connection.",
+        "properties": {
+          "captured_at": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "gid": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "pid": {
+            "minimum": 1,
+            "type": [
+              "integer",
+              "null"
+            ],
+            "x-diagnostic": true
+          },
+          "uid": {
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "uid",
+          "gid",
+          "pid",
+          "captured_at"
+        ],
+        "title": "Peer",
+        "type": "object",
+        "x-contract-generation": 1
+      },
+      "policy-status": {
+        "additionalProperties": true,
+        "description": "The current file authority and its rebuildable materialization.",
+        "properties": {
+          "authority": {
+            "const": "file"
+          },
+          "contract_generation": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "format": {
+            "const": 1,
+            "type": "integer"
+          },
+          "loaded_at": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "policy_version": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "projection": {
+            "additionalProperties": true,
+            "properties": {
+              "in_step": {
+                "enum": [
+                  "yes",
+                  "no",
+                  "unknown"
+                ],
+                "type": "string"
+              },
+              "kind": {
+                "maxLength": 64,
+                "minLength": 1,
+                "pattern": "^[a-z][a-z0-9_-]*$",
+                "type": "string",
+                "x-reserved-values": [
+                  "memory",
+                  "database",
+                  "combined",
+                  "unknown"
+                ]
+              },
+              "policy_version": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "kind",
+              "policy_version",
+              "in_step"
+            ],
+            "type": "object"
+          },
+          "rule_count": {
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "contract_generation",
+          "authority",
+          "policy_version",
+          "format",
+          "loaded_at",
+          "rule_count",
+          "projection"
+        ],
+        "title": "Policy status",
+        "type": "object",
+        "x-contract-generation": 1
+      },
+      "principal": {
+        "additionalProperties": true,
+        "description": "The identity a decision is evaluated against and evidence records.",
+        "properties": {
+          "established_at": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "established_by": {
+            "minLength": 1,
+            "type": "string",
+            "x-documented-values": [
+              "peer_credential"
+            ]
+          },
+          "gid": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "groups": {
+            "items": {
+              "type": "string"
+            },
+            "type": [
+              "array",
+              "null"
+            ]
+          },
+          "groups_status": {
+            "enum": [
+              "resolved",
+              "partial",
+              "unknown"
+            ],
+            "type": "string"
+          },
+          "kind": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string",
+            "x-documented-values": [
+              "user",
+              "service",
+              "workload",
+              "process"
+            ],
+            "x-max-bytes": 64
+          },
+          "name": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reference": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "uid": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "unnamed_group_ids": {
+            "items": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "kind",
+          "uid",
+          "gid",
+          "name",
+          "groups",
+          "groups_status",
+          "unnamed_group_ids",
+          "established_by",
+          "established_at",
+          "reference"
+        ],
+        "title": "Principal",
+        "type": "object",
+        "x-contract-generation": 1
+      },
+      "problem-document": {
+        "additionalProperties": true,
+        "description": "A classified refusal or inability to obtain an answer.",
+        "properties": {
+          "code": {
+            "pattern": "^[a-z][a-z0-9_]*$",
+            "type": "string"
+          },
+          "contract_generation": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "member": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "message": {
+            "maxLength": 1024,
+            "type": "string"
+          },
+          "retryable": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "contract_generation",
+          "code",
+          "message",
+          "retryable"
+        ],
+        "title": "Problem document",
+        "type": "object",
+        "x-contract-generation": 1
+      },
+      "status-result": {
+        "additionalProperties": true,
+        "description": "The caller-visible state and supported contract generations.",
+        "properties": {
+          "contract_generation": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "decision_store": {
+            "additionalProperties": true,
+            "description": "The decision authority this daemon composed and what its last reconciliation of each scope found; counts and cursors are null, never zero, when it has not run (article 2).",
+            "properties": {
+              "reconciliations": {
+                "items": {
+                  "additionalProperties": true,
+                  "properties": {
+                    "baseline": {
+                      "additionalProperties": true,
+                      "properties": {
+                        "first_covered_sequence": {
+                          "minimum": 1,
+                          "type": [
+                            "integer",
+                            "null"
+                          ]
+                        },
+                        "legacy_effects_without_authority": {
+                          "minimum": 0,
+                          "type": [
+                            "integer",
+                            "null"
+                          ]
+                        },
+                        "state": {
+                          "enum": [
+                            "established",
+                            "unknown",
+                            "not_established"
+                          ],
+                          "type": "string"
+                        },
+                        "store_id": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "state"
+                      ],
+                      "type": "object"
+                    },
+                    "checked_at": {
+                      "format": "date-time",
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "contradictory_decisions": {
+                      "minimum": 0,
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "effects_without_decision": {
+                      "minimum": 0,
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "policy_versions_absent": {
+                      "minimum": 0,
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "policy_versions_damaged": {
+                      "minimum": 0,
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "scope": {
+                      "maxLength": 128,
+                      "minLength": 1,
+                      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+                      "type": "string"
+                    },
+                    "state": {
+                      "enum": [
+                        "agrees",
+                        "disagrees",
+                        "contradicts",
+                        "not_run"
+                      ],
+                      "type": "string"
+                    },
+                    "through_decision_position": {
+                      "minimum": 1,
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "through_sequence": {
+                      "minimum": 1,
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "unflushed_declared": {
+                      "minimum": 0,
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "unknown_event_coverage": {
+                      "type": [
+                        "boolean",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "scope",
+                    "checked_at",
+                    "through_sequence",
+                    "through_decision_position",
+                    "state",
+                    "baseline",
+                    "effects_without_decision",
+                    "contradictory_decisions",
+                    "unflushed_declared",
+                    "unknown_event_coverage",
+                    "policy_versions_absent",
+                    "policy_versions_damaged"
+                  ],
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              "store": {
+                "enum": [
+                  "file",
+                  "memory",
+                  "unknown"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "store",
+              "reconciliations"
+            ],
+            "type": "object"
+          },
+          "evidence_emission": {
+            "additionalProperties": true,
+            "description": "Whether the evidence pipeline is delivering to its store, and what it is holding when it is not. Article 10 makes the pipeline declare its gaps; a store refusing appends holds them where no reader of the chain can see them.",
+            "properties": {
+              "delivering": {
+                "type": "boolean"
+              },
+              "scopes_undelivered": {
+                "items": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "type": "array",
+                "uniqueItems": true
+              },
+              "undelivered_records": {
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "delivering",
+              "undelivered_records",
+              "scopes_undelivered"
+            ],
+            "type": "object"
+          },
+          "integrity_grade": {
+            "additionalProperties": true,
+            "properties": {
+              "basis": {
+                "enum": [
+                  "caller_can_write",
+                  "caller_cannot_write",
+                  "access_not_established"
+                ],
+                "type": "string"
+              },
+              "evaluated_at": {
+                "format": "date-time",
+                "type": "string"
+              },
+              "grade": {
+                "enum": [
+                  "observability",
+                  "evidence",
+                  "unverified"
+                ],
+                "type": "string"
+              },
+              "reevaluation_interval_seconds": {
+                "maximum": 300,
+                "minimum": 1,
+                "type": "integer"
+              },
+              "store": {
+                "minLength": 1,
+                "type": "string"
+              }
+            },
+            "required": [
+              "grade",
+              "basis",
+              "evaluated_at",
+              "store",
+              "reevaluation_interval_seconds"
+            ],
+            "type": "object"
+          },
+          "principal": {
+            "additionalProperties": true,
+            "description": "The principal as the peer credential established it.",
+            "properties": {
+              "kind": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "uid": {
+                "minimum": 0,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "kind",
+              "uid",
+              "name"
+            ],
+            "type": "object"
+          },
+          "privacy_provider": {
+            "minLength": 1,
+            "type": "string",
+            "x-reserved-values": [
+              "none",
+              "unknown"
+            ]
+          },
+          "store": {
+            "additionalProperties": true,
+            "properties": {
+              "authority": {
+                "enum": [
+                  "authoritative",
+                  "projection",
+                  "observation",
+                  "unknown"
+                ],
+                "type": "string"
+              },
+              "kind": {
+                "minLength": 1,
+                "type": "string"
+              }
+            },
+            "required": [
+              "authority",
+              "kind"
+            ],
+            "type": "object"
+          },
+          "supported_generations": {
+            "items": {
+              "minimum": 1,
+              "type": "integer"
+            },
+            "minItems": 1,
+            "type": "array",
+            "uniqueItems": true
+          }
+        },
+        "required": [
+          "contract_generation",
+          "supported_generations",
+          "integrity_grade",
+          "privacy_provider",
+          "principal",
+          "store"
+        ],
+        "title": "Status result",
+        "type": "object",
+        "x-contract-generation": 1
+      },
+      "whoami-result": {
+        "additionalProperties": true,
+        "description": "The principal, and the record it was built from, as the daemon saw them.",
+        "properties": {
+          "connection_id": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "contract_generation": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "delegation": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/delegation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "group_lifetime_seconds": {
+            "maximum": 3600,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "mode": {
+            "enum": [
+              "per_user",
+              "system"
+            ],
+            "type": "string"
+          },
+          "peer": {
+            "$ref": "#/components/schemas/peer"
+          },
+          "principal": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/principal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "refresh_due_at": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "socket_path": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "established",
+              "unknown",
+              "refused"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "contract_generation",
+          "connection_id",
+          "socket_path",
+          "mode",
+          "peer",
+          "principal",
+          "status",
+          "refresh_due_at",
+          "group_lifetime_seconds",
+          "delegation"
+        ],
+        "title": "Who am I result",
+        "type": "object",
+        "x-contract-generation": 1
+      }
+    }
+  },
+  "info": {
+    "title": "sayfirst-contract",
+    "version": "0.2.0",
+    "x-contract-generation": 1
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/approvals/{approval_ref}": {
+      "get": {
+        "operationId": "read_approval",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "approval_ref",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "contract_generation",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "scope",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/approval-result"
+                }
+              }
+            },
+            "description": "Answered"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/problem-document"
+                }
+              }
+            },
+            "description": "Refused",
+            "x-problem-codes": [
+              "generation_missing",
+              "generation_unreadable",
+              "scope_required"
+            ]
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/problem-document"
+                }
+              }
+            },
+            "description": "Refused",
+            "x-problem-codes": [
+              "peer_not_admitted",
+              "peer_uid_unmapped",
+              "principal_refused"
+            ]
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/problem-document"
+                }
+              }
+            },
+            "description": "Refused",
+            "x-problem-codes": [
+              "approval_unknown"
+            ]
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/problem-document"
+                }
+              }
+            },
+            "description": "Refused",
+            "x-problem-codes": [
+              "generation_unsupported"
+            ]
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/problem-document"
+                }
+              }
+            },
+            "description": "Refused",
+            "x-problem-codes": [
+              "internal"
+            ]
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/problem-document"
+                }
+              }
+            },
+            "description": "Refused",
+            "x-problem-codes": [
+              "peer_credential_unavailable",
+              "principal_groups_unavailable"
+            ]
+          }
+        }
+      }
+    },
+    "/approvals/{approval_ref}/resolution": {
+      "post": {
+        "operationId": "resolve_approval",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "approval_ref",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/approval-resolve-request"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/approval-result"
+                }
+              }
+            },
+            "description": "Answered"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/problem-document"
+                }
+              }
+            },
+            "description": "Refused",
+            "x-problem-codes": [
+              "generation_missing",
+              "generation_unreadable",
+              "member_unknown",
+              "request_malformed"
+            ]
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/problem-document"
+                }
+              }
+            },
+            "description": "Refused",
+            "x-problem-codes": [
+              "peer_not_admitted",
+              "peer_uid_unmapped",
+              "principal_refused",
+              "scope_refused"
+            ]
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/problem-document"
+                }
+              }
+            },
+            "description": "Refused",
+            "x-problem-codes": [
+              "approval_unknown"
+            ]
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/problem-document"
+                }
+              }
+            },
+            "description": "Refused",
+            "x-problem-codes": [
+              "approval_resolved",
+              "generation_unsupported"
+            ]
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/problem-document"
+                }
+              }
+            },
+            "description": "Refused",
+            "x-problem-codes": [
+              "internal"
+            ]
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/problem-document"
+                }
+              }
+            },
+            "description": "Refused",
+            "x-problem-codes": [
+              "approval_provider_unavailable",
+              "peer_credential_unavailable",
+              "principal_groups_unavailable"
+            ]
+          }
+        }
+      }
+    },
+    "/decisions": {
+      "post": {
+        "operationId": "ask_decision",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Accept",
+            "required": false,
+            "schema": {
+              "maxLength": 256,
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/decision-ask-request"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/decision-result"
+                }
+              },
+              "text/event-stream": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "$ref": "#/components/schemas/decision-result"
+                    },
+                    {
+                      "$ref": "#/components/schemas/grant-signal"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Answered"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/problem-document"
+                }
+              }
+            },
+            "description": "Refused",
+            "x-problem-codes": [
+              "delegation_invalid",
+              "generation_missing",
+              "generation_unreadable",
+              "member_unknown",
+              "request_malformed"
+            ]
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/problem-document"
+                }
+              }
+            },
+            "description": "Refused",
+            "x-problem-codes": [
+              "configuration_writable_by_principal",
+              "peer_not_admitted",
+              "peer_uid_unmapped",
+              "policy_writable_by_principal",
+              "principal_refused",
+              "scope_refused"
+            ]
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/problem-document"
+                }
+              }
+            },
+            "description": "Refused",
+            "x-problem-codes": [
+              "generation_unsupported"
+            ]
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/problem-document"
+                }
+              }
+            },
+            "description": "Refused",
+            "x-problem-codes": [
+              "internal"
+            ]
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/problem-document"
+                }
+              }
+            },
+            "description": "Refused",
+            "x-problem-codes": [
+              "approval_provider_unavailable",
+              "decision_contended",
+              "decision_store_unavailable",
+              "peer_credential_unavailable",
+              "policy_archive_unavailable",
+              "policy_unavailable",
+              "principal_groups_unavailable"
+            ]
+          }
+        },
+        "x-media-type-selector": {
+          "header": "Accept",
+          "otherwise": "application/json",
+          "response": "200",
+          "selects": "text/event-stream"
+        },
+        "x-stream-hold": {
+          "description": "A boundary that holds this stream keeps the connection's write side open for as long as it holds the grant. The control plane watches the read side for the loss article 10 names, where a peer that closed and a peer that shut its write side down are one event.",
+          "half-close": "forbidden",
+          "reason-at-end-of-file": "connection_lost",
+          "response": "200",
+          "selects": "text/event-stream"
+        }
+      }
+    },
+    "/decisions/{decision_ref}": {
+      "get": {
+        "operationId": "read_decision",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "decision_ref",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "contract_generation",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "scope",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/decision-record"
+                }
+              }
+            },
+            "description": "Answered"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/problem-document"
+                }
+              }
+            },
+            "description": "Refused",
+            "x-problem-codes": [
+              "generation_missing",
+              "generation_unreadable",
+              "scope_required"
+            ]
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/problem-document"
+                }
+              }
+            },
+            "description": "Refused",
+            "x-problem-codes": [
+              "principal_refused"
+            ]
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/problem-document"
+                }
+              }
+            },
+            "description": "Refused",
+            "x-problem-codes": [
+              "decision_not_found"
+            ]
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/problem-document"
+                }
+              }
+            },
+            "description": "Refused",
+            "x-problem-codes": [
+              "generation_unsupported"
+            ]
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/problem-document"
+                }
+              }
+            },
+            "description": "Refused",
+            "x-problem-codes": [
+              "internal"
+            ]
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/problem-document"
+                }
+              }
+            },
+            "description": "Refused",
+            "x-problem-codes": [
+              "decision_store_unavailable"
+            ]
+          }
+        }
+      }
+    },
+    "/policy/status": {
+      "get": {
+        "operationId": "read_policy_status",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "contract_generation",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/policy-status"
+                }
+              }
+            },
+            "description": "Answered"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/problem-document"
+                }
+              }
+            },
+            "description": "Refused",
+            "x-problem-codes": [
+              "generation_missing",
+              "generation_unreadable"
+            ]
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/problem-document"
+                }
+              }
+            },
+            "description": "Refused",
+            "x-problem-codes": [
+              "principal_refused"
+            ]
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/problem-document"
+                }
+              }
+            },
+            "description": "Refused",
+            "x-problem-codes": [
+              "generation_unsupported"
+            ]
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/problem-document"
+                }
+              }
+            },
+            "description": "Refused",
+            "x-problem-codes": [
+              "internal"
+            ]
+          }
+        }
+      }
+    },
+    "/scopes/{scope}/evidence": {
+      "get": {
+        "operationId": "read_evidence",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "scope",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "contract_generation",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "from_sequence",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page_size",
+            "required": false,
+            "schema": {
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/evidence-page-result"
+                }
+              }
+            },
+            "description": "Answered"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/problem-document"
+                }
+              }
+            },
+            "description": "Refused",
+            "x-problem-codes": [
+              "evidence_range_invalid",
+              "generation_missing",
+              "generation_unreadable",
+              "scope_invalid",
+              "scope_required"
+            ]
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/problem-document"
+                }
+              }
+            },
+            "description": "Refused",
+            "x-problem-codes": [
+              "principal_refused"
+            ]
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/problem-document"
+                }
+              }
+            },
+            "description": "Refused",
+            "x-problem-codes": [
+              "generation_unsupported"
+            ]
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/problem-document"
+                }
+              }
+            },
+            "description": "Refused",
+            "x-problem-codes": [
+              "internal"
+            ]
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/problem-document"
+                }
+              }
+            },
+            "description": "Refused",
+            "x-problem-codes": [
+              "evidence_store_unavailable"
+            ]
+          }
+        }
+      }
+    },
+    "/scopes/{scope}/evidence/export": {
+      "get": {
+        "operationId": "export_evidence",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "scope",
+            "required": true,
+            "schema": {
+              "maxLength": 128,
+              "minLength": 1,
+              "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "contract_generation",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "from_sequence",
+            "required": true,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to_sequence",
+            "required": false,
+            "schema": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/evidence-export-result"
+                }
+              }
+            },
+            "description": "Answered"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/problem-document"
+                }
+              }
+            },
+            "description": "Refused",
+            "x-problem-codes": [
+              "evidence_range_invalid",
+              "generation_missing",
+              "generation_unreadable",
+              "scope_invalid",
+              "scope_required"
+            ]
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/problem-document"
+                }
+              }
+            },
+            "description": "Refused",
+            "x-problem-codes": [
+              "principal_refused"
+            ]
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/problem-document"
+                }
+              }
+            },
+            "description": "Refused",
+            "x-problem-codes": [
+              "generation_unsupported"
+            ]
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/problem-document"
+                }
+              }
+            },
+            "description": "Refused",
+            "x-problem-codes": [
+              "internal"
+            ]
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/problem-document"
+                }
+              }
+            },
+            "description": "Refused",
+            "x-problem-codes": [
+              "evidence_store_unavailable"
+            ]
+          }
+        }
+      }
+    },
+    "/status": {
+      "get": {
+        "operationId": "read_status",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/status-result"
+                }
+              }
+            },
+            "description": "Answered"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/problem-document"
+                }
+              }
+            },
+            "description": "Refused",
+            "x-problem-codes": [
+              "peer_not_admitted",
+              "peer_uid_unmapped",
+              "principal_refused"
+            ]
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/problem-document"
+                }
+              }
+            },
+            "description": "Refused",
+            "x-problem-codes": [
+              "internal"
+            ]
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/problem-document"
+                }
+              }
+            },
+            "description": "Refused",
+            "x-problem-codes": [
+              "peer_credential_unavailable",
+              "principal_groups_unavailable"
+            ]
+          }
+        }
+      }
+    },
+    "/whoami": {
+      "get": {
+        "operationId": "read_whoami",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/whoami-result"
+                }
+              }
+            },
+            "description": "Answered"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/problem-document"
+                }
+              }
+            },
+            "description": "Refused",
+            "x-problem-codes": [
+              "peer_not_admitted",
+              "peer_uid_unmapped"
+            ]
+          },
+          "500": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/problem-document"
+                }
+              }
+            },
+            "description": "Refused",
+            "x-problem-codes": [
+              "internal"
+            ]
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/problem-document"
+                }
+              }
+            },
+            "description": "Refused",
+            "x-problem-codes": [
+              "peer_credential_unavailable"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "servers": [
+    {
+      "description": "The host is a placeholder and is ignored by the daemon; the surface is reached over the one Unix domain socket, whose path the deployment configures (see docs/deployment.md).",
+      "url": "http://sayfirst",
+      "x-socket-path-default": "/run/sayfirst/daemon.sock"
+    }
+  ],
+  "x-spdx-license-identifier": "Apache-2.0",
+  "x-transport": "http-unix-socket"
+}

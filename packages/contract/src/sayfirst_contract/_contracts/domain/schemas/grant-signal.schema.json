@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "description": "A heartbeat or terminal change for one issued grant.",
+  "properties": {
+    "at": {
+      "format": "date-time",
+      "type": "string"
+    },
+    "contract_generation": {
+      "minimum": 1,
+      "type": "integer"
+    },
+    "grant_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "type": "string"
+    },
+    "kind": {
+      "enum": [
+        "heartbeat",
+        "grant_ended"
+      ],
+      "type": "string"
+    },
+    "policy_version": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "reason": {
+      "enum": [
+        "policy_version_changed",
+        "expired",
+        "daemon_stopping"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "contract_generation",
+    "kind",
+    "grant_id",
+    "policy_version",
+    "at"
+  ],
+  "title": "Grant signal",
+  "type": "object",
+  "x-contract-generation": 1,
+  "x-spdx-license-identifier": "Apache-2.0"
+}

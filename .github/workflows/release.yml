@@ -1,0 +1,139 @@
+# SPDX-License-Identifier: Apache-2.0
+name: release
+
+# The only file in this repository that can publish anything.
+#
+# Article 0 forbids publishing under the decided name — no package on an index,
+# no public repository, no announcement — until the marks are filed. So the act
+# that starts a publication is the operator's tag and nothing else: there is no
+# `branches:` under `push` and no `pull_request:` here, and
+# `tests/test_release_workflow_publishes_only_on_a_tag.py` fails if either
+# arrives. A tag that names a version these distributions do not carry reaches
+# the build, is refused there by name, and publishes nothing.
+#
+# The dry run exists so the mechanics are proven BEFORE the marks rather than
+# discovered after them: started by hand with publishing switched off, it runs
+# the gate, builds every distribution and checks the artefacts, and stops.
+#
+# The `pypi` environment must require a reviewer. That is a setting of the
+# repository, which no file here can read, so this workflow names the
+# environment and the publication checklist carries the setting. No token is
+# stored: the index verifies this workflow's own identity (trusted publishing),
+# which is why the publish job asks for `id-token: write` and nothing else.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: "Leave false for a dry run: build and check, publish nothing."
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: build and check every distribution
+    runs-on: ubuntu-latest
+    steps:
+      # First of all, and before anything is checked out or installed: the
+      # button cannot publish. The publish job below admits a tag push only,
+      # so a dispatch already publishes nothing — but an input that reads like
+      # a switch and is wired to nothing is a trap for the next operator, so
+      # the answer is a refusal by name rather than a silence. `inputs.publish`
+      # and not `github.event.inputs.publish`: the input is declared a boolean,
+      # and the latter is the string "false", which is true.
+      - name: Publication comes from a tag, not from this button
+        if: github.event_name == 'workflow_dispatch' && inputs.publish
+        run: |
+          echo "::error::a dispatch publishes nothing: re-run it with publish false to dry-run, and publish by tagging"
+          exit 1
+
+      # The whole history, like every checkout in this repository's workflows:
+      # the copy-note guard of article 14 reads commit messages, and a
+      # depth-one checkout has none to read.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      # Pinned, like the artefact checker below: a release mechanism whose own
+      # toolchain version is decided on the day is one whose green says nothing
+      # about the next run. The same version the client's release workflow
+      # pins. The gate workflow is deliberately left unpinned — it reports on
+      # the tree under the toolchain of the day, which is what a gate is for.
+      - uses: astral-sh/setup-uv@v5
+        with:
+          version: "0.12.5"
+          enable-cache: true
+
+      # Both readings below go through uv's interpreter and never the runner's
+      # own `python`, whose version is whatever the image ships: the reader
+      # needs the standard library's TOML module, which arrived in 3.11, and a
+      # release check that trusts the image for that is one a runner upgrade
+      # can take away. `--frozen` keeps the environment the one `uv.lock`
+      # records and `--all-packages` installs the workspace, which is what
+      # every line of this repository's workflows that reads the tree owes:
+      # `tests/test_public_gate_runs_the_suite.py` holds both flags of every
+      # step that collects or runs the suite, and says in its own words that
+      # the two formatter steps below are exempt.
+      - name: The tag names the version every distribution carries
+        if: github.event_name == 'push'
+        run: uv run --frozen --all-packages python scripts/release_version.py --expect "${GITHUB_REF_NAME#v}"
+
+      - name: Every distribution carries one version
+        if: github.event_name == 'workflow_dispatch'
+        run: uv run --frozen --all-packages python scripts/release_version.py
+
+      - name: Tests
+        run: uv run --frozen --all-packages pytest -rs
+      # The two steps below carry neither flag, and the exemption is the gate
+      # guard's own: ruff reads the tree and no distribution's metadata, so
+      # `--all-packages` would install a workspace it does not consult, and
+      # making the formatter frozen would turn a stale lock into a failure of
+      # the lint as well — a decision about how this project wants to be told,
+      # not a property of any guard, and one that guard leaves to review. It
+      # costs this workflow nothing: a lock this branch does not record has
+      # already failed the frozen steps above, which run first.
+      - name: Lint
+        run: uv run ruff check .
+      - name: Format
+        run: uv run ruff format --check .
+      - name: Generated artefacts match their sources
+        run: uv run --frozen --all-packages python packages/contract/scripts/build_contract.py --check
+
+      - name: Build every distribution
+        run: uv build --all-packages --out-dir dist
+      - name: The built artefacts are well formed
+        # Pinned: this is the only check between a build and the index, and an
+        # unpinned one is whatever version the index serves that day.
+        run: uvx twine@7.0.0 check dist/*
+      - name: What this run built
+        run: ls -l dist/ >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: distributions
+          path: dist/
+
+  publish:
+    name: publish to the index
+    needs: build
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: distributions
+          path: dist/
+      # Pinned to a release of its own, like the uv above and the artefact
+      # checker beside it: this is the one step that uploads, and a step whose
+      # own version is decided on the day is one whose green says nothing about
+      # the next run. A branch ref is whatever it points at when the tag is
+      # cut, which is not a thing a release can be repeated from.
+      - uses: pypa/gh-action-pypi-publish@v1.14.2

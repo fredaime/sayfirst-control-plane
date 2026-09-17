@@ -1,0 +1,251 @@
+# SPDX-License-Identifier: Apache-2.0
+name: gate
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+permissions:
+  contents: read
+
+# Two settings below are the difference between a gate that runs the guards and
+# a gate that reports on nothing.
+#
+# Every step that runs the suite installs the workspace (`--all-packages`):
+# `uv run` alone puts the sources on the import path but not their distribution
+# metadata, and the contract reads its own release from that metadata at import
+# — so an uninstalled run fails before collection, and a reader of the Guard
+# column cannot tell a guard that never ran from one that does not exist
+# (article 2). One step is exempt, the constitution leg below, and it says so
+# in its own words: `imports-no-workspace-package`. That declaration is honoured
+# only where the tree bears it out — the invocation passes `--basetemp`, so the
+# repository `conftest.py` never derives a run root and never imports a
+# workspace package to decide where, and every file it names imports none
+# either. `tests/test_public_gate_runs_the_suite.py` checks all three and plants
+# both ways of getting the claim wrong.
+#
+# Every checkout takes the whole history (`fetch-depth: 0`): the copy-note
+# guard of article 14 reads the commit messages, and a depth-one checkout has
+# none to read. `tests/test_public_gate_runs_the_suite.py` holds both.
+
+jobs:
+  # Article 6 asks that the identity guards run on Linux and on macOS: the
+  # Darwin peer-credential adapter has no other place it can be exercised, and
+  # a guard proved on one platform is not proved.
+
+  # The guards below define the host boundary rather than one platform's way
+  # of reading it, so both runners must hold every one of them. They are named
+  # here for a reader, and a test in this repository checks the list against the
+  # gates in the source; what makes a guard that stopped running on macOS a
+  # failure rather than a silence is the gate step below, which reads those same
+  # gates and the run's own report. Guards gated to a single operating system
+  # are not listed here — that runner owes them, and the gate step says so.
+  #
+  # OS_REAL_GUARDS_BEGIN
+  #   - test_a_group_writable_ancestor_is_refused_unless_it_is_sticky
+  #   - test_a_reconnect_is_authorised_on_the_credential_it_read
+  #   - test_a_second_request_on_one_connection_keeps_the_credential
+  #   - test_a_stale_socket_is_replaced_and_a_live_one_is_not
+  #   - test_a_start_the_host_refuses_exits_with_the_documented_code_and_reason
+  #   - test_a_system_reconnect_resolves_its_expected_principal_again
+  #   - test_an_impostor_bound_at_the_path_is_refused_by_the_client
+  #   - test_status_answers_the_document_the_contract_publishes
+  #   - test_status_exits_could_not_ask_when_nothing_is_listening
+  #   - test_status_names_the_grade_its_basis_the_interval_and_the_provider
+  #   - test_the_command_exits_could_not_ask_when_nothing_is_listening
+  #   - test_the_command_refuses_an_impostor_and_sends_it_nothing
+  #   - test_the_command_renders_a_human_line_without_json
+  #   - test_the_connection_class_has_no_network_connect
+  #   - test_the_contract_client_reads_the_status_operation_from_the_daemon
+  #   - test_the_contract_client_speaks_to_the_daemon_over_the_verified_connection
+  #   - test_the_daemon_creates_its_per_user_directory_protected
+  #   - test_the_daemon_listens_only_on_the_socket
+  #   - test_the_daemon_refuses_to_start_on_a_socket_directory_writable_by_anyone_else
+  #   - test_the_documented_default_address_starts_a_daemon_on_a_clean_machine
+  #   - test_the_reported_expectation_follows_the_credential_that_was_checked
+  #   - test_the_socket_is_created_at_its_final_mode
+  #   - test_whoami_reports_the_principal_and_the_verification
+  #   - test_whoami_reports_the_principal_as_the_socket_saw_it
+  # OS_REAL_GUARDS_END
+  identity:
+    name: identity guards (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - name: Identity guards
+        # -rs reports every skip with its reason, and --junitxml records which
+        # guard had which outcome, so the step below can tell "held" from
+        # "reported as not runnable" instead of reading one exit code for both.
+        run: >-
+          uv run --frozen --all-packages pytest -rs --junitxml=identity-report.xml
+          packages/contract/tests/identity
+          packages/control-plane/tests/identity
+      - name: The guards this runner owes were held, not skipped
+        # Named above for a reader; required here by the gates in their own
+        # source. A guard gated to this operating system that was skipped on
+        # this runner — the Darwin credential guard on macOS, say — has nowhere
+        # else it can be held, so the step fails and names it. Proved by
+        # `test_a_planted_skip_fails_the_step_that_calls_a_skip_a_failure`.
+        if: always()
+        run: >-
+          uv run --frozen --all-packages python scripts/require_platform_guards.py
+          --junit=identity-report.xml
+          --tree=packages/contract/tests/identity
+          --tree=packages/control-plane/tests/identity
+
+  # Article 15 asks every contributor to sign off each commit, and article 16
+  # calls this check required. It reads the commits of the change itself, which
+  # is why every checkout above takes the whole history.
+  developer-certificate-of-origin:
+    name: sign-off on every commit
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Every commit certifies the Developer Certificate of Origin
+        run: >-
+          python scripts/check_developer_certificate_of_origin.py
+          --base=${{ github.event.pull_request.base.sha }}
+          --head=${{ github.event.pull_request.head.sha }}
+
+  gate:
+    name: whole suite and format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - name: Tests
+        run: uv run --frozen --all-packages pytest -rs
+      - name: Lint
+        run: uv run ruff check .
+      - name: Format
+        run: uv run ruff format --check .
+      - name: Generated artefacts match their sources
+        run: uv run --frozen --all-packages python packages/contract/scripts/build_contract.py --check
+
+  # The Guard column of the constitution says what enforces each article. An
+  # audit on 2026-09-06 found the column carrying mechanisms that do not exist,
+  # proof labels nobody resolves and guards no gate executes — and found this
+  # workflow reaching none of its guards, so nothing contradicted the column.
+  # This leg is the contradiction. It is a leg of its own rather than a step of
+  # `gate` for one reason: the guard that holds the column honest must run even
+  # on a day the suite cannot be collected, which is the very condition that
+  # let the column drift. `--basetemp` is what makes that true — the repository
+  # `conftest.py` derives a run root only when it is not given one, and that
+  # derivation is the sole import of a workspace package on this path, so this
+  # step reads the standard library, pytest and the tree, and nothing else.
+  constitution:
+    name: the Guard column is traceable
+    runs-on: ubuntu-latest
+    steps:
+      # The whole history, like every other checkout here. This leg reads the
+      # tree and not the log, so the depth costs it nothing; what it buys is
+      # that the rule has no exception a reader has to know about, and that a
+      # guard of article 14 added to this leg later is not silently starved of
+      # the commits it reads.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - name: Every Guard names a mechanism this tree runs, or defers and says what
+        # imports-no-workspace-package: this step runs the guard uninstalled on
+        # purpose — the column must be held on a day the workspace cannot be
+        # installed, which is the day it drifted. `--basetemp` is what makes the
+        # claim true: the repository `conftest.py` derives a run root, and
+        # imports a workspace package to decide where, only when it is not given
+        # one. `--frozen` resolves nothing: the environment this step builds is
+        # the one `uv.lock` records, so a red here is about this branch.
+        #
+        # -rxX reports every expected failure with its reason, so the rows this
+        # branch knows to be red are read as a work list rather than as silence;
+        # they are `xfail(strict=True)`, so a row repaired without deleting its
+        # entry fails this step instead of passing quietly.
+        run: >-
+          uv run --frozen pytest -rxX --basetemp="${RUNNER_TEMP}/constitution"
+          tests/test_guard_column_is_traceable.py
+
+  # Article 8 and article 10 say what system mode does; `assemble()` refuses it
+  # below uid 0, so no ordinary runner reaches that code and every claim about
+  # it was, until this leg, a claim about something that had never executed.
+  # A container job runs as root, which is the whole requirement: the guards
+  # below stand a real daemon up, drop it to a real account, and speak to it as
+  # root and as a governed principal over the address it bound.
+  #
+  # ROOT_CONTAINER_GUARDS_BEGIN
+  #   - test_a_chain_already_in_the_store_for_a_scope_no_rule_names_refuses_the_start_by_name
+  #   - test_a_configuration_a_stranger_can_write_refuses_the_start_by_name
+  #   - test_a_configuration_only_root_and_the_administrator_group_can_write_starts
+  #   - test_a_decision_in_a_scope_no_rule_names_is_recorded_on_a_chain_created_on_first_use
+  #   - test_a_decision_request_from_root_is_refused_on_the_connection
+  #   - test_a_governed_principal_is_served_a_decision_by_the_same_daemon
+  #   - test_a_policy_the_dropped_daemon_cannot_read_refuses_the_start_by_name
+  #   - test_a_program_run_as_the_administrator_group_obtains_no_decision_but_is_admitted
+  #   - test_an_account_outside_the_admission_group_is_refused_by_the_kernel
+  #   - test_an_evidence_parent_the_dropped_daemon_cannot_traverse_refuses_the_start_by_name
+  #   - test_an_evidence_root_a_governed_principal_owns_refuses_the_start_by_name
+  #   - test_an_evidence_root_carrying_the_admission_group_refuses_the_start_by_name
+  #   - test_an_evidence_root_every_account_can_write_refuses_the_start_by_name
+  #   - test_an_evidence_root_no_chain_can_be_created_in_refuses_the_start_by_name
+  #   - test_an_evidence_root_the_packager_did_not_create_refuses_the_start_by_name
+  #   - test_an_evidence_root_under_a_world_writable_parent_refuses_the_start_by_name
+  #   - test_an_existing_chain_the_dropped_daemon_cannot_append_to_refuses_the_start_by_name
+  #   - test_the_chain_the_dropped_daemon_creates_holds_mode_0600_whatever_the_umask
+  #   - test_the_composed_evidence_store_is_owned_by_the_account_that_must_append_to_it
+  #   - test_the_dropped_daemon_does_not_take_the_admission_group_as_its_own
+  # ROOT_CONTAINER_GUARDS_END
+  root-container:
+    name: system mode as root
+    runs-on: ubuntu-latest
+    container: python:3.12-slim
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v5
+      - name: The accounts the root-container guards name
+        # The same three the local recipe creates; the guards assert they exist
+        # rather than skipping, so a leg that forgot them fails and says so.
+        # `acl` carries setfacl, which the ancestor guard of rule S4 needs.
+        run: |
+          apt-get update && apt-get install -y --no-install-recommends acl passwd
+          groupadd sayfirst-admitted
+          groupadd sayfirst-daemon
+          useradd -g sayfirst-daemon -G sayfirst-admitted -M \
+            -s /usr/sbin/nologin sayfirst-daemon
+          useradd -m -G sayfirst-admitted sayfirst-client
+          useradd -m sayfirst-outsider
+      - name: Identity guards, as root
+        run: >-
+          uv run --frozen --all-packages pytest -rs --junitxml=root-identity-report.xml
+          packages/contract/tests/identity
+          packages/control-plane/tests/identity
+      - name: The guards only a root container can hold were held, not skipped
+        # Without `--privilege=root` this step would require of an ordinary
+        # runner what only this one can hold, and require of this one nothing
+        # it does not already owe. It defaults to the privilege of the process
+        # it runs in; it is written out here because the claim is the point.
+        if: always()
+        run: >-
+          uv run --frozen --all-packages python scripts/require_platform_guards.py
+          --junit=root-identity-report.xml
+          --privilege=root
+          --tree=packages/contract/tests/identity
+          --tree=packages/control-plane/tests/identity

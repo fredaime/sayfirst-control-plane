@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "A decision cached under exact conditions for a bounded lifetime.",
+  "properties": {
+    "conditions": {
+      "additionalProperties": false,
+      "properties": {
+        "arguments_digest": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "capability": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(\\.[a-z][a-z0-9]*)*$",
+          "type": "string"
+        },
+        "principal_reference": {
+          "maxLength": 261,
+          "minLength": 6,
+          "pattern": "^user:[^:]+$",
+          "type": "string"
+        },
+        "scope": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "scope",
+        "capability",
+        "principal_reference",
+        "arguments_digest"
+      ],
+      "type": "object"
+    },
+    "decision_ref": {
+      "maxLength": 128,
+      "minLength": 1,
+      "type": "string"
+    },
+    "expires_at": {
+      "format": "date-time",
+      "type": "string"
+    },
+    "grant_id": {
+      "maxLength": 128,
+      "minLength": 1,
+      "type": "string"
+    },
+    "heartbeat_seconds": {
+      "maximum": 60,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "issued_at": {
+      "format": "date-time",
+      "type": "string"
+    },
+    "lifetime_seconds": {
+      "maximum": 86400,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "policy_version": {
+      "minLength": 1,
+      "type": "string"
+    }
+  },
+  "required": [
+    "grant_id",
+    "decision_ref",
+    "policy_version",
+    "issued_at",
+    "lifetime_seconds",
+    "expires_at",
+    "heartbeat_seconds",
+    "conditions"
+  ],
+  "title": "Grant",
+  "type": "object",
+  "x-contract-generation": 1,
+  "x-spdx-license-identifier": "Apache-2.0"
+}

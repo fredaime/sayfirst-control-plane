@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "One person's resolution of a pending approval.",
+  "properties": {
+    "approval_ref": {
+      "maxLength": 128,
+      "minLength": 1,
+      "type": "string"
+    },
+    "contract_generation": {
+      "minimum": 1,
+      "type": "integer"
+    },
+    "reason": {
+      "maxLength": 1024,
+      "type": "string"
+    },
+    "resolution": {
+      "enum": [
+        "approve",
+        "reject"
+      ],
+      "type": "string"
+    },
+    "scope": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "contract_generation",
+    "scope",
+    "approval_ref",
+    "resolution"
+  ],
+  "title": "Approval resolve request",
+  "type": "object",
+  "x-contract-generation": 1,
+  "x-spdx-license-identifier": "Apache-2.0"
+}

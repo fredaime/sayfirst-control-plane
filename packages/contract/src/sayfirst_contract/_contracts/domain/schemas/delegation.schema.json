@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "Declared by the peer, not verified by the daemon. Every length bound is counted in UTF-8 bytes and published as x-max-bytes; maxLength is the weaker code-point bound a generic validator can check on its own.",
+  "properties": {
+    "chain": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string",
+            "x-max-bytes": 64
+          },
+          "name": {
+            "maxLength": 256,
+            "type": [
+              "string",
+              "null"
+            ],
+            "x-max-bytes": 256
+          },
+          "uid": {
+            "minimum": 0,
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "via": {
+            "maxLength": 64,
+            "minLength": 1,
+            "type": "string",
+            "x-documented-values": [
+              "privilege_tool",
+              "scheduler",
+              "build_runner"
+            ],
+            "x-max-bytes": 64
+          }
+        },
+        "required": [
+          "kind",
+          "name",
+          "uid",
+          "via"
+        ],
+        "type": "object"
+      },
+      "maxItems": 4,
+      "minItems": 1,
+      "type": "array"
+    },
+    "status": {
+      "minLength": 1,
+      "type": "string",
+      "x-documented-values": [
+        "declared"
+      ]
+    }
+  },
+  "required": [
+    "chain"
+  ],
+  "title": "Delegation",
+  "type": "object",
+  "x-contract-generation": 1,
+  "x-spdx-license-identifier": "Apache-2.0"
+}

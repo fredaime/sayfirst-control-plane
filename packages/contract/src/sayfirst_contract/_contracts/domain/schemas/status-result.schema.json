@@ -1,0 +1,314 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "description": "The caller-visible state and supported contract generations.",
+  "properties": {
+    "contract_generation": {
+      "minimum": 1,
+      "type": "integer"
+    },
+    "decision_store": {
+      "additionalProperties": true,
+      "description": "The decision authority this daemon composed and what its last reconciliation of each scope found; counts and cursors are null, never zero, when it has not run (article 2).",
+      "properties": {
+        "reconciliations": {
+          "items": {
+            "additionalProperties": true,
+            "properties": {
+              "baseline": {
+                "additionalProperties": true,
+                "properties": {
+                  "first_covered_sequence": {
+                    "minimum": 1,
+                    "type": [
+                      "integer",
+                      "null"
+                    ]
+                  },
+                  "legacy_effects_without_authority": {
+                    "minimum": 0,
+                    "type": [
+                      "integer",
+                      "null"
+                    ]
+                  },
+                  "state": {
+                    "enum": [
+                      "established",
+                      "unknown",
+                      "not_established"
+                    ],
+                    "type": "string"
+                  },
+                  "store_id": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "state"
+                ],
+                "type": "object"
+              },
+              "checked_at": {
+                "format": "date-time",
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "contradictory_decisions": {
+                "minimum": 0,
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "effects_without_decision": {
+                "minimum": 0,
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "policy_versions_absent": {
+                "minimum": 0,
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "policy_versions_damaged": {
+                "minimum": 0,
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "scope": {
+                "maxLength": 128,
+                "minLength": 1,
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+                "type": "string"
+              },
+              "state": {
+                "enum": [
+                  "agrees",
+                  "disagrees",
+                  "contradicts",
+                  "not_run"
+                ],
+                "type": "string"
+              },
+              "through_decision_position": {
+                "minimum": 1,
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "through_sequence": {
+                "minimum": 1,
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "unflushed_declared": {
+                "minimum": 0,
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "unknown_event_coverage": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "scope",
+              "checked_at",
+              "through_sequence",
+              "through_decision_position",
+              "state",
+              "baseline",
+              "effects_without_decision",
+              "contradictory_decisions",
+              "unflushed_declared",
+              "unknown_event_coverage",
+              "policy_versions_absent",
+              "policy_versions_damaged"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "store": {
+          "enum": [
+            "file",
+            "memory",
+            "unknown"
+          ],
+          "type": "string"
+        }
+      },
+      "required": [
+        "store",
+        "reconciliations"
+      ],
+      "type": "object"
+    },
+    "evidence_emission": {
+      "additionalProperties": true,
+      "description": "Whether the evidence pipeline is delivering to its store, and what it is holding when it is not. Article 10 makes the pipeline declare its gaps; a store refusing appends holds them where no reader of the chain can see them.",
+      "properties": {
+        "delivering": {
+          "type": "boolean"
+        },
+        "scopes_undelivered": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "type": "array",
+          "uniqueItems": true
+        },
+        "undelivered_records": {
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "delivering",
+        "undelivered_records",
+        "scopes_undelivered"
+      ],
+      "type": "object"
+    },
+    "integrity_grade": {
+      "additionalProperties": true,
+      "properties": {
+        "basis": {
+          "enum": [
+            "caller_can_write",
+            "caller_cannot_write",
+            "access_not_established"
+          ],
+          "type": "string"
+        },
+        "evaluated_at": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "grade": {
+          "enum": [
+            "observability",
+            "evidence",
+            "unverified"
+          ],
+          "type": "string"
+        },
+        "reevaluation_interval_seconds": {
+          "maximum": 300,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "store": {
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "grade",
+        "basis",
+        "evaluated_at",
+        "store",
+        "reevaluation_interval_seconds"
+      ],
+      "type": "object"
+    },
+    "principal": {
+      "additionalProperties": true,
+      "description": "The principal as the peer credential established it.",
+      "properties": {
+        "kind": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "uid": {
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "kind",
+        "uid",
+        "name"
+      ],
+      "type": "object"
+    },
+    "privacy_provider": {
+      "minLength": 1,
+      "type": "string",
+      "x-reserved-values": [
+        "none",
+        "unknown"
+      ]
+    },
+    "store": {
+      "additionalProperties": true,
+      "properties": {
+        "authority": {
+          "enum": [
+            "authoritative",
+            "projection",
+            "observation",
+            "unknown"
+          ],
+          "type": "string"
+        },
+        "kind": {
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "authority",
+        "kind"
+      ],
+      "type": "object"
+    },
+    "supported_generations": {
+      "items": {
+        "minimum": 1,
+        "type": "integer"
+      },
+      "minItems": 1,
+      "type": "array",
+      "uniqueItems": true
+    }
+  },
+  "required": [
+    "contract_generation",
+    "supported_generations",
+    "integrity_grade",
+    "privacy_provider",
+    "principal",
+    "store"
+  ],
+  "title": "Status result",
+  "type": "object",
+  "x-contract-generation": 1,
+  "x-spdx-license-identifier": "Apache-2.0"
+}

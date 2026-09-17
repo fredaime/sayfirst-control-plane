@@ -1,0 +1,244 @@
+{
+  "codes": {
+    "answer_unreadable": {
+      "article": "13",
+      "class": "could_not_ask",
+      "meaning": "the response is not a document of this generation",
+      "origin": "client",
+      "retryable": null
+    },
+    "approval_provider_unavailable": {
+      "article": "12",
+      "class": "could_not_ask",
+      "meaning": "the approval provider gave no usable answer, so the suspension could not be put to it or the person's act could not be applied to it; no decision is taken and no act is recorded",
+      "origin": "server",
+      "retryable": true
+    },
+    "approval_resolved": {
+      "article": "12",
+      "class": "refused",
+      "meaning": "the approval is already approved, rejected or expired; a resolution creates a record and never edits an existing record",
+      "origin": "server",
+      "retryable": false
+    },
+    "approval_unknown": {
+      "article": "12",
+      "class": "refused",
+      "meaning": "no approval with this reference exists in this scope",
+      "origin": "server",
+      "retryable": false
+    },
+    "configuration_writable_by_principal": {
+      "article": "8",
+      "class": "refused",
+      "meaning": "the asking principal could write or replace the configuration the daemon was started from, or a directory it could be replaced through; no decision is taken",
+      "origin": "server",
+      "retryable": false
+    },
+    "decision_contended": {
+      "article": "3",
+      "class": "could_not_ask",
+      "meaning": "another ask of the same question holds the one execution its approval authorises, so this ask was not decided; no decision is taken and the ask may be made again",
+      "origin": "server",
+      "retryable": true
+    },
+    "decision_not_found": {
+      "article": "3",
+      "class": "refused",
+      "meaning": "no decision with this reference exists in this scope",
+      "origin": "server",
+      "retryable": false
+    },
+    "decision_store_unavailable": {
+      "article": "3",
+      "class": "could_not_ask",
+      "meaning": "the decision authority gave no usable answer; a failure before any byte was written committed nothing, and an uncertain write may have committed, so neither case means no decision was taken",
+      "origin": "server",
+      "retryable": true
+    },
+    "delegation_invalid": {
+      "article": "6",
+      "class": "refused",
+      "meaning": "the declared delegation is outside the bounds the contract names",
+      "origin": "server",
+      "retryable": false
+    },
+    "evidence_range_invalid": {
+      "article": "10",
+      "class": "refused",
+      "meaning": "the requested evidence range or page size is invalid",
+      "origin": "server",
+      "retryable": false
+    },
+    "evidence_store_unavailable": {
+      "article": "10",
+      "class": "could_not_ask",
+      "meaning": "the evidence authority could not be read",
+      "origin": "server",
+      "retryable": true
+    },
+    "generation_missing": {
+      "article": "13",
+      "class": "refused",
+      "meaning": "the request carries no contract_generation",
+      "origin": "server",
+      "retryable": false
+    },
+    "generation_unreadable": {
+      "article": "13",
+      "class": "refused",
+      "meaning": "contract_generation is not an integer",
+      "origin": "server",
+      "retryable": false
+    },
+    "generation_unsupported": {
+      "article": "13",
+      "class": "refused",
+      "meaning": "contract_generation is not accepted; supported_generations says which are",
+      "origin": "server",
+      "retryable": false
+    },
+    "impostor": {
+      "article": "6",
+      "class": "could_not_ask",
+      "meaning": "the peer is not the daemon principal",
+      "origin": "client",
+      "retryable": false
+    },
+    "internal": {
+      "article": "2",
+      "class": "could_not_ask",
+      "meaning": "the server failed for a reason it cannot classify",
+      "origin": "server",
+      "retryable": null
+    },
+    "member_unknown": {
+      "article": "13",
+      "class": "refused",
+      "meaning": "the request carries a member this generation does not define; member names it",
+      "origin": "server",
+      "retryable": false
+    },
+    "operation_unknown": {
+      "article": "13",
+      "class": "refused",
+      "meaning": "the request names no operation this generation defines",
+      "origin": "server",
+      "retryable": false
+    },
+    "outcome_unknown": {
+      "article": "13",
+      "class": "could_not_ask",
+      "meaning": "the server answered an outcome this generation does not define; the effect does not start and the outcome is reported as unknown",
+      "origin": "client",
+      "retryable": false
+    },
+    "peer_credential_unavailable": {
+      "article": "6",
+      "class": "could_not_ask",
+      "meaning": "the operating system delivered no credential for the connection",
+      "origin": "server",
+      "retryable": true
+    },
+    "peer_identity_unsupported": {
+      "article": "6",
+      "class": "could_not_ask",
+      "meaning": "this platform has no peer-credential adapter, so no identity can be read",
+      "origin": "client",
+      "retryable": false
+    },
+    "peer_not_admitted": {
+      "article": "6",
+      "class": "refused",
+      "meaning": "the peer's credential is not on this daemon's admission list",
+      "origin": "server",
+      "retryable": false
+    },
+    "peer_uid_unmapped": {
+      "article": "6",
+      "class": "refused",
+      "meaning": "the kernel reported the overflow id: a user id from another user namespace with no mapping here",
+      "origin": "server",
+      "retryable": false
+    },
+    "policy_archive_unavailable": {
+      "article": "3",
+      "class": "could_not_ask",
+      "meaning": "the policy bytes could not be durably kept, or are damaged, before the decision could be appended; no decision is committed",
+      "origin": "server",
+      "retryable": true
+    },
+    "policy_unavailable": {
+      "article": "3",
+      "class": "could_not_ask",
+      "meaning": "the policy authority could not be read; no decision is taken",
+      "origin": "server",
+      "retryable": true
+    },
+    "policy_writable_by_principal": {
+      "article": "8",
+      "class": "refused",
+      "meaning": "the asking principal could write or replace the policy authority; no decision is taken",
+      "origin": "server",
+      "retryable": false
+    },
+    "principal_groups_unavailable": {
+      "article": "6",
+      "class": "could_not_ask",
+      "meaning": "the account directory could not be consulted in time; the connection's identity is unknown",
+      "origin": "server",
+      "retryable": true
+    },
+    "principal_refused": {
+      "article": "6",
+      "class": "refused",
+      "meaning": "the peer credential is not an admitted identity or the principal could write the daemon configuration",
+      "origin": "server",
+      "retryable": false
+    },
+    "request_malformed": {
+      "article": "13",
+      "class": "refused",
+      "meaning": "the request does not validate against its schema; member names the first offending member",
+      "origin": "server",
+      "retryable": false
+    },
+    "scope_invalid": {
+      "article": "5",
+      "class": "refused",
+      "meaning": "the scope named in this request does not match the scope pattern of the contract",
+      "origin": "server",
+      "retryable": false
+    },
+    "scope_refused": {
+      "article": "5",
+      "class": "refused",
+      "meaning": "the principal may not write this scope",
+      "origin": "server",
+      "retryable": false
+    },
+    "scope_required": {
+      "article": "5",
+      "class": "refused",
+      "meaning": "a read named no scope; the default never applies to a read",
+      "origin": "server",
+      "retryable": false
+    },
+    "server_not_the_daemon_principal": {
+      "article": "6",
+      "class": "could_not_ask",
+      "meaning": "the process listening where the client connected is not the daemon's principal; nothing was sent",
+      "origin": "client",
+      "retryable": false
+    },
+    "unreachable": {
+      "article": "1",
+      "class": "could_not_ask",
+      "meaning": "the control plane could not be reached, or a write's reply was lost; an occurrence of the second states no retryability, since the write may have been taken",
+      "origin": "client",
+      "retryable": true
+    }
+  },
+  "x-contract-generation": 1,
+  "x-spdx-license-identifier": "Apache-2.0"
+}

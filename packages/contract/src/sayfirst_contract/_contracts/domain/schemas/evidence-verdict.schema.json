@@ -1,0 +1,142 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "description": "Verification of one range of one scope chain.",
+  "properties": {
+    "condition": {
+      "enum": [
+        "intact",
+        "broken_at",
+        "gap_at",
+        "unverifiable"
+      ],
+      "type": "string"
+    },
+    "covers_an_entry": {
+      "type": "boolean"
+    },
+    "declared_gaps": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "count": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "reason": {
+            "enum": [
+              "dropped",
+              "purged",
+              "torn",
+              "unflushed"
+            ],
+            "type": "string"
+          },
+          "sequence": {
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "sequence",
+          "reason",
+          "count"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "expected": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "found": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "from_sequence": {
+      "minimum": 1,
+      "type": "integer"
+    },
+    "grades": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "connection_id": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "grade": {
+            "enum": [
+              "unverified",
+              "observability",
+              "evidence"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "connection_id",
+          "grade"
+        ],
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "scope": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+      "type": "string"
+    },
+    "sequence": {
+      "minimum": 1,
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "to_sequence": {
+      "minimum": 1,
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "up_to": {
+      "minimum": 1,
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "version": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "scope",
+    "condition",
+    "from_sequence",
+    "to_sequence",
+    "up_to",
+    "sequence",
+    "expected",
+    "found",
+    "version",
+    "covers_an_entry",
+    "declared_gaps",
+    "grades"
+  ],
+  "title": "Evidence verdict",
+  "type": "object",
+  "x-contract-generation": 1,
+  "x-spdx-license-identifier": "Apache-2.0"
+}

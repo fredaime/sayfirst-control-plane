@@ -1,0 +1,126 @@
+{
+  "attributes": {
+    "approval.ref": {
+      "article": "12",
+      "type": "string",
+      "values": "open"
+    },
+    "approval.state": {
+      "article": "12",
+      "type": "string",
+      "values": [
+        "pending",
+        "approved",
+        "rejected",
+        "expired",
+        "unknown"
+      ]
+    },
+    "arguments.digest": {
+      "article": "11",
+      "type": "string",
+      "values": "open"
+    },
+    "authority": {
+      "article": "3",
+      "type": "string",
+      "values": [
+        "authoritative",
+        "projection",
+        "observation",
+        "unknown"
+      ]
+    },
+    "capability": {
+      "article": "1",
+      "type": "string",
+      "values": "open"
+    },
+    "contract.generation": {
+      "article": "13",
+      "type": "int",
+      "values": "open"
+    },
+    "correlation": {
+      "article": "13",
+      "type": "string",
+      "values": "open"
+    },
+    "decision.outcome": {
+      "article": "1",
+      "type": "string",
+      "values": [
+        "allow",
+        "deny",
+        "suspend",
+        "unknown"
+      ]
+    },
+    "decision.reason": {
+      "article": "1",
+      "type": "string",
+      "values": [
+        "policy_allows",
+        "policy_denies",
+        "policy_absent",
+        "policy_requires_review",
+        "capability_unknown",
+        "approval_granted",
+        "approval_rejected",
+        "unknown"
+      ]
+    },
+    "decision.ref": {
+      "article": "1",
+      "type": "string",
+      "values": "open"
+    },
+    "evidence.ref": {
+      "article": "10",
+      "type": "string",
+      "values": "open"
+    },
+    "integrity.grade": {
+      "article": "7",
+      "type": "string",
+      "values": [
+        "observability",
+        "evidence",
+        "unverified"
+      ]
+    },
+    "policy.version": {
+      "article": "3",
+      "type": "string",
+      "values": "open"
+    },
+    "principal.kind": {
+      "article": "6",
+      "documented_values": [
+        "user",
+        "service",
+        "workload",
+        "process"
+      ],
+      "type": "string",
+      "values": "open"
+    },
+    "privacy.provider": {
+      "article": "11",
+      "reserved_values": [
+        "none",
+        "unknown"
+      ],
+      "type": "string",
+      "values": "open"
+    },
+    "scope": {
+      "article": "5",
+      "type": "string",
+      "values": "open"
+    }
+  },
+  "prefix": "sayfirst",
+  "x-contract-generation": 1,
+  "x-spdx-license-identifier": "Apache-2.0"
+}

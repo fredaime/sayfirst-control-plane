@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "description": "A classified refusal or inability to obtain an answer.",
+  "properties": {
+    "code": {
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "type": "string"
+    },
+    "contract_generation": {
+      "minimum": 1,
+      "type": "integer"
+    },
+    "member": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "message": {
+      "maxLength": 1024,
+      "type": "string"
+    },
+    "retryable": {
+      "type": [
+        "boolean",
+        "null"
+      ]
+    }
+  },
+  "required": [
+    "contract_generation",
+    "code",
+    "message",
+    "retryable"
+  ],
+  "title": "Problem document",
+  "type": "object",
+  "x-contract-generation": 1,
+  "x-spdx-license-identifier": "Apache-2.0"
+}

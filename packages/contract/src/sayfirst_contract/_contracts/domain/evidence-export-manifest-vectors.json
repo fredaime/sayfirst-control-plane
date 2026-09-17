@@ -1,0 +1,1503 @@
+{
+  "description": "Export manifest recipes v1, v2 and v3, each pinned by bundles the recipe hashes to exactly one digest; a digest never recomputes under another recipe. The server and the contract each run every vector independently (article 13).",
+  "vectors": [
+    {
+      "bundle": {
+        "contract_version": "1",
+        "entries": [
+          {
+            "body": {
+              "providers": []
+            },
+            "connection_id": "daemon",
+            "entry_hash": "6ef3b012954204384f1f176eb33c4937d016f9308d80f4204a02875ab51e7bb4",
+            "kind": "composition",
+            "preimage_version": "sayfirst-control-plane/evidence/v1",
+            "previous_hash": null,
+            "principal": {
+              "id": "daemon",
+              "kind": "service",
+              "via": []
+            },
+            "recorded_at": "2026-09-05T10:00:00Z",
+            "scope": "local",
+            "sequence": 1
+          },
+          {
+            "body": {
+              "basis": "caller_can_write",
+              "evaluated_at": "2026-09-05T10:00:00Z",
+              "grade": "observability",
+              "paths_inspected": 3
+            },
+            "connection_id": "connection-1",
+            "entry_hash": "948f855cdf7c272fbbf73c44821b3089c21fc6b0c0c89d0504757e5e3135dca8",
+            "kind": "grade",
+            "preimage_version": "sayfirst-control-plane/evidence/v1",
+            "previous_hash": "6ef3b012954204384f1f176eb33c4937d016f9308d80f4204a02875ab51e7bb4",
+            "principal": {
+              "id": "alice",
+              "kind": "user",
+              "via": []
+            },
+            "recorded_at": "2026-09-05T10:00:00Z",
+            "scope": "local",
+            "sequence": 2
+          },
+          {
+            "body": {
+              "capability": "example.effect",
+              "decided_at": "2026-09-05T10:00:00Z",
+              "decision_id": "decision-0",
+              "outcome": "deny",
+              "policy_version": "policy-1"
+            },
+            "connection_id": "connection-1",
+            "entry_hash": "13745872ecd47c0310932f75b2cf9c55993d9a654568b830adc5d2c546c866e8",
+            "kind": "effect",
+            "preimage_version": "sayfirst-control-plane/evidence/v1",
+            "previous_hash": "948f855cdf7c272fbbf73c44821b3089c21fc6b0c0c89d0504757e5e3135dca8",
+            "principal": {
+              "id": "alice",
+              "kind": "user",
+              "via": []
+            },
+            "recorded_at": "2026-09-05T10:00:00Z",
+            "scope": "local",
+            "sequence": 3
+          }
+        ],
+        "entry_count": 3,
+        "from_sequence": 1,
+        "manifest_hash": "861f6088c3d14fc4f5161de8c2922c218fbf90a8a86467286711b30b64768d0c",
+        "next_from": null,
+        "scope": "local",
+        "to_sequence": 3,
+        "verification": {
+          "condition": "intact",
+          "covers_an_entry": true,
+          "declared_gaps": [],
+          "expected": null,
+          "found": null,
+          "from_sequence": 1,
+          "grades": [
+            {
+              "connection_id": "connection-1",
+              "grade": "observability"
+            },
+            {
+              "connection_id": "daemon",
+              "grade": "unverified"
+            }
+          ],
+          "scope": "local",
+          "sequence": null,
+          "to_sequence": 3,
+          "up_to": 3,
+          "version": null
+        }
+      },
+      "manifest_hash": "861f6088c3d14fc4f5161de8c2922c218fbf90a8a86467286711b30b64768d0c",
+      "manifest_version": "sayfirst-control-plane/evidence-export/v1",
+      "name": "v1_intact_range"
+    },
+    {
+      "bundle": {
+        "contract_version": "1",
+        "entries": [
+          {
+            "body": {
+              "capability": "example.effect",
+              "decided_at": "2026-09-05T10:00:00Z",
+              "decision_id": "decision-0",
+              "outcome": "deny",
+              "policy_version": "policy-1"
+            },
+            "connection_id": "connection-1",
+            "entry_hash": "13745872ecd47c0310932f75b2cf9c55993d9a654568b830adc5d2c546c866e8",
+            "kind": "effect",
+            "preimage_version": "sayfirst-control-plane/evidence/v1",
+            "previous_hash": "948f855cdf7c272fbbf73c44821b3089c21fc6b0c0c89d0504757e5e3135dca8",
+            "principal": {
+              "id": "alice",
+              "kind": "user",
+              "via": []
+            },
+            "recorded_at": "2026-09-05T10:00:00Z",
+            "scope": "local",
+            "sequence": 3
+          }
+        ],
+        "entry_count": 1,
+        "from_sequence": 3,
+        "manifest_hash": "3fd8c3d0d59e6eafb53f0df42a8469b43b6127cb79b6a5b83827ccdf520c2a1a",
+        "next_from": null,
+        "scope": "local",
+        "to_sequence": 3,
+        "verification": {
+          "condition": "intact",
+          "covers_an_entry": true,
+          "declared_gaps": [],
+          "expected": null,
+          "found": null,
+          "from_sequence": 3,
+          "grades": [
+            {
+              "connection_id": "connection-1",
+              "grade": "observability"
+            }
+          ],
+          "scope": "local",
+          "sequence": null,
+          "to_sequence": 3,
+          "up_to": 3,
+          "version": null
+        }
+      },
+      "manifest_hash": "3fd8c3d0d59e6eafb53f0df42a8469b43b6127cb79b6a5b83827ccdf520c2a1a",
+      "manifest_version": "sayfirst-control-plane/evidence-export/v1",
+      "name": "v1_partial_range_with_an_asserted_prefix_grade"
+    },
+    {
+      "bundle": {
+        "contract_version": "1",
+        "entries": [
+          {
+            "body": {
+              "providers": []
+            },
+            "connection_id": "daemon",
+            "entry_hash": "6ef3b012954204384f1f176eb33c4937d016f9308d80f4204a02875ab51e7bb4",
+            "kind": "composition",
+            "preimage_version": "sayfirst-control-plane/evidence/v1",
+            "previous_hash": null,
+            "principal": {
+              "id": "daemon",
+              "kind": "service",
+              "via": []
+            },
+            "recorded_at": "2026-09-05T10:00:00Z",
+            "scope": "local",
+            "sequence": 1
+          },
+          {
+            "body": {
+              "capability": "example.effect",
+              "decided_at": "2026-09-05T10:00:00Z",
+              "decision_id": "decision-0",
+              "outcome": "deny",
+              "policy_version": "policy-1"
+            },
+            "connection_id": "connection-1",
+            "entry_hash": "13745872ecd47c0310932f75b2cf9c55993d9a654568b830adc5d2c546c866e8",
+            "kind": "effect",
+            "preimage_version": "sayfirst-control-plane/evidence/v1",
+            "previous_hash": "948f855cdf7c272fbbf73c44821b3089c21fc6b0c0c89d0504757e5e3135dca8",
+            "principal": {
+              "id": "alice",
+              "kind": "user",
+              "via": []
+            },
+            "recorded_at": "2026-09-05T10:00:00Z",
+            "scope": "local",
+            "sequence": 3
+          }
+        ],
+        "entry_count": 2,
+        "from_sequence": 1,
+        "manifest_hash": "9a069b8447104921d0bc0caffcbae2831af6e91cc2cdc3042b1052227803c170",
+        "next_from": null,
+        "scope": "local",
+        "to_sequence": 3,
+        "verification": {
+          "condition": "gap_at",
+          "covers_an_entry": true,
+          "declared_gaps": [],
+          "expected": null,
+          "found": null,
+          "from_sequence": 1,
+          "grades": [
+            {
+              "connection_id": "daemon",
+              "grade": "unverified"
+            }
+          ],
+          "scope": "local",
+          "sequence": 2,
+          "to_sequence": 3,
+          "up_to": null,
+          "version": null
+        }
+      },
+      "manifest_hash": "9a069b8447104921d0bc0caffcbae2831af6e91cc2cdc3042b1052227803c170",
+      "manifest_version": "sayfirst-control-plane/evidence-export/v1",
+      "name": "v1_gapped_range"
+    },
+    {
+      "bundle": {
+        "contract_version": "1",
+        "entries": [
+          {
+            "body": {
+              "providers": []
+            },
+            "connection_id": "daemon",
+            "entry_hash": "6ef3b012954204384f1f176eb33c4937d016f9308d80f4204a02875ab51e7bb4",
+            "kind": "composition",
+            "preimage_version": "sayfirst-control-plane/evidence/v1",
+            "previous_hash": null,
+            "principal": {
+              "id": "daemon",
+              "kind": "service",
+              "via": []
+            },
+            "recorded_at": "2026-09-05T10:00:00Z",
+            "scope": "local",
+            "sequence": 1
+          },
+          {
+            "body": {
+              "basis": "caller_can_write",
+              "evaluated_at": "2026-09-05T10:00:00Z",
+              "grade": "observability",
+              "paths_inspected": 3
+            },
+            "connection_id": "connection-1",
+            "entry_hash": "948f855cdf7c272fbbf73c44821b3089c21fc6b0c0c89d0504757e5e3135dca8",
+            "kind": "grade",
+            "preimage_version": "sayfirst-control-plane/evidence/v1",
+            "previous_hash": "6ef3b012954204384f1f176eb33c4937d016f9308d80f4204a02875ab51e7bb4",
+            "principal": {
+              "id": "alice",
+              "kind": "user",
+              "via": []
+            },
+            "recorded_at": "2026-09-05T10:00:00Z",
+            "scope": "local",
+            "sequence": 2
+          },
+          {
+            "body": {
+              "capability": "example.effect",
+              "decided_at": "2026-09-05T10:00:00Z",
+              "decision_id": "decision-0",
+              "outcome": "deny",
+              "policy_version": "policy-1"
+            },
+            "connection_id": "connection-1",
+            "entry_hash": "13745872ecd47c0310932f75b2cf9c55993d9a654568b830adc5d2c546c866e8",
+            "kind": "effect",
+            "preimage_version": "sayfirst-control-plane/evidence/v1",
+            "previous_hash": "948f855cdf7c272fbbf73c44821b3089c21fc6b0c0c89d0504757e5e3135dca8",
+            "principal": {
+              "id": "alice",
+              "kind": "user",
+              "via": []
+            },
+            "recorded_at": "2026-09-05T10:00:00Z",
+            "scope": "local",
+            "sequence": 3
+          }
+        ],
+        "entry_count": 3,
+        "from_sequence": 1,
+        "manifest_hash": "6d987d13f95287ab0c597fe88b7a45173d086850d6f269d7634cbd5ba14416e9",
+        "next_from": null,
+        "scope": "local",
+        "to_sequence": 3,
+        "verification": {
+          "condition": "intact",
+          "covers_an_entry": true,
+          "declared_gaps": [],
+          "expected": null,
+          "found": null,
+          "from_sequence": 1,
+          "grades": [
+            {
+              "connection_id": "connection-1",
+              "grade": "observability"
+            },
+            {
+              "connection_id": "daemon",
+              "grade": "unverified"
+            }
+          ],
+          "scope": "local",
+          "sequence": null,
+          "to_sequence": 3,
+          "up_to": 3,
+          "version": null
+        }
+      },
+      "manifest_hash": "6d987d13f95287ab0c597fe88b7a45173d086850d6f269d7634cbd5ba14416e9",
+      "manifest_version": "sayfirst-control-plane/evidence-export/v2",
+      "name": "v2_intact_range"
+    },
+    {
+      "bundle": {
+        "contract_version": "1",
+        "entries": [
+          {
+            "body": {
+              "capability": "example.effect",
+              "decided_at": "2026-09-05T10:00:00Z",
+              "decision_id": "decision-0",
+              "outcome": "deny",
+              "policy_version": "policy-1"
+            },
+            "connection_id": "connection-1",
+            "entry_hash": "13745872ecd47c0310932f75b2cf9c55993d9a654568b830adc5d2c546c866e8",
+            "kind": "effect",
+            "preimage_version": "sayfirst-control-plane/evidence/v1",
+            "previous_hash": "948f855cdf7c272fbbf73c44821b3089c21fc6b0c0c89d0504757e5e3135dca8",
+            "principal": {
+              "id": "alice",
+              "kind": "user",
+              "via": []
+            },
+            "recorded_at": "2026-09-05T10:00:00Z",
+            "scope": "local",
+            "sequence": 3
+          }
+        ],
+        "entry_count": 1,
+        "from_sequence": 3,
+        "manifest_hash": "5488c89970f5819ffdbfb575c7154e96ef0aa641ee17f092165198945d2439e0",
+        "next_from": null,
+        "scope": "local",
+        "to_sequence": 3,
+        "verification": {
+          "condition": "intact",
+          "covers_an_entry": true,
+          "declared_gaps": [],
+          "expected": null,
+          "found": null,
+          "from_sequence": 3,
+          "grades": [
+            {
+              "connection_id": "connection-1",
+              "grade": "observability"
+            }
+          ],
+          "scope": "local",
+          "sequence": null,
+          "to_sequence": 3,
+          "up_to": 3,
+          "version": null
+        }
+      },
+      "manifest_hash": "5488c89970f5819ffdbfb575c7154e96ef0aa641ee17f092165198945d2439e0",
+      "manifest_version": "sayfirst-control-plane/evidence-export/v2",
+      "name": "v2_partial_range_binds_the_whole_verdict"
+    },
+    {
+      "bundle": {
+        "contract_version": "1",
+        "entries": [
+          {
+            "body": {
+              "providers": []
+            },
+            "connection_id": "daemon",
+            "entry_hash": "6ef3b012954204384f1f176eb33c4937d016f9308d80f4204a02875ab51e7bb4",
+            "kind": "composition",
+            "preimage_version": "sayfirst-control-plane/evidence/v1",
+            "previous_hash": null,
+            "principal": {
+              "id": "daemon",
+              "kind": "service",
+              "via": []
+            },
+            "recorded_at": "2026-09-05T10:00:00Z",
+            "scope": "local",
+            "sequence": 1
+          },
+          {
+            "body": {
+              "basis": "caller_can_write",
+              "evaluated_at": "2026-09-05T10:00:00Z",
+              "grade": "evidence",
+              "paths_inspected": 3
+            },
+            "connection_id": "connection-1",
+            "entry_hash": "948f855cdf7c272fbbf73c44821b3089c21fc6b0c0c89d0504757e5e3135dca8",
+            "kind": "grade",
+            "preimage_version": "sayfirst-control-plane/evidence/v1",
+            "previous_hash": "6ef3b012954204384f1f176eb33c4937d016f9308d80f4204a02875ab51e7bb4",
+            "principal": {
+              "id": "alice",
+              "kind": "user",
+              "via": []
+            },
+            "recorded_at": "2026-09-05T10:00:00Z",
+            "scope": "local",
+            "sequence": 2
+          },
+          {
+            "body": {
+              "capability": "example.effect",
+              "decided_at": "2026-09-05T10:00:00Z",
+              "decision_id": "decision-0",
+              "outcome": "deny",
+              "policy_version": "policy-1"
+            },
+            "connection_id": "connection-1",
+            "entry_hash": "13745872ecd47c0310932f75b2cf9c55993d9a654568b830adc5d2c546c866e8",
+            "kind": "effect",
+            "preimage_version": "sayfirst-control-plane/evidence/v1",
+            "previous_hash": "948f855cdf7c272fbbf73c44821b3089c21fc6b0c0c89d0504757e5e3135dca8",
+            "principal": {
+              "id": "alice",
+              "kind": "user",
+              "via": []
+            },
+            "recorded_at": "2026-09-05T10:00:00Z",
+            "scope": "local",
+            "sequence": 3
+          }
+        ],
+        "entry_count": 3,
+        "from_sequence": 1,
+        "manifest_hash": "bea6d8f141cfa2dfcd3aa3cd77c8eb2f72ba3ec17e5d7783a2bea975f3e78a69",
+        "next_from": null,
+        "scope": "local",
+        "to_sequence": 3,
+        "verification": {
+          "condition": "broken_at",
+          "covers_an_entry": true,
+          "declared_gaps": [],
+          "expected": "c11d67924e689ea74c3458a2cedbe86343a7d34e952edbc010be48ea3d55e041",
+          "found": "948f855cdf7c272fbbf73c44821b3089c21fc6b0c0c89d0504757e5e3135dca8",
+          "from_sequence": 1,
+          "grades": [
+            {
+              "connection_id": "daemon",
+              "grade": "unverified"
+            }
+          ],
+          "scope": "local",
+          "sequence": 2,
+          "to_sequence": 3,
+          "up_to": null,
+          "version": null
+        }
+      },
+      "manifest_hash": "bea6d8f141cfa2dfcd3aa3cd77c8eb2f72ba3ec17e5d7783a2bea975f3e78a69",
+      "manifest_version": "sayfirst-control-plane/evidence-export/v2",
+      "name": "v2_broken_chain"
+    },
+    {
+      "bundle": {
+        "contract_version": "1",
+        "entries": [
+          {
+            "body": {
+              "providers": []
+            },
+            "connection_id": "daemon",
+            "entry_hash": "6ef3b012954204384f1f176eb33c4937d016f9308d80f4204a02875ab51e7bb4",
+            "kind": "composition",
+            "preimage_version": "sayfirst-control-plane/evidence/v1",
+            "previous_hash": null,
+            "principal": {
+              "id": "daemon",
+              "kind": "service",
+              "via": []
+            },
+            "recorded_at": "2026-09-05T10:00:00Z",
+            "scope": "local",
+            "sequence": 1
+          },
+          {
+            "body": {
+              "basis": "caller_can_write",
+              "evaluated_at": "2026-09-05T10:00:00Z",
+              "grade": "observability",
+              "paths_inspected": 3
+            },
+            "connection_id": "connection-1",
+            "entry_hash": "948f855cdf7c272fbbf73c44821b3089c21fc6b0c0c89d0504757e5e3135dca8",
+            "kind": "grade",
+            "preimage_version": "sayfirst-control-plane/evidence/v1",
+            "previous_hash": "6ef3b012954204384f1f176eb33c4937d016f9308d80f4204a02875ab51e7bb4",
+            "principal": {
+              "id": "alice",
+              "kind": "user",
+              "via": []
+            },
+            "recorded_at": "2026-09-05T10:00:00Z",
+            "scope": "local",
+            "sequence": 2
+          },
+          {
+            "body": {
+              "capability": "example.effect",
+              "decided_at": "2026-09-05T10:00:00Z",
+              "decision_id": "decision-0",
+              "outcome": "deny",
+              "policy_version": "policy-1"
+            },
+            "connection_id": "connection-1",
+            "entry_hash": "13745872ecd47c0310932f75b2cf9c55993d9a654568b830adc5d2c546c866e8",
+            "kind": "effect",
+            "preimage_version": "sayfirst-control-plane/evidence/v9",
+            "previous_hash": "948f855cdf7c272fbbf73c44821b3089c21fc6b0c0c89d0504757e5e3135dca8",
+            "principal": {
+              "id": "alice",
+              "kind": "user",
+              "via": []
+            },
+            "recorded_at": "2026-09-05T10:00:00Z",
+            "scope": "local",
+            "sequence": 3
+          }
+        ],
+        "entry_count": 3,
+        "from_sequence": 1,
+        "manifest_hash": "38015f805ecd226194798e02537cadc98145b658df194b26a73092362a35a25d",
+        "next_from": null,
+        "scope": "local",
+        "to_sequence": 3,
+        "verification": {
+          "condition": "broken_at",
+          "covers_an_entry": true,
+          "declared_gaps": [],
+          "expected": null,
+          "found": "13745872ecd47c0310932f75b2cf9c55993d9a654568b830adc5d2c546c866e8",
+          "from_sequence": 1,
+          "grades": [
+            {
+              "connection_id": "connection-1",
+              "grade": "observability"
+            },
+            {
+              "connection_id": "daemon",
+              "grade": "unverified"
+            }
+          ],
+          "scope": "local",
+          "sequence": 3,
+          "to_sequence": 3,
+          "up_to": null,
+          "version": "sayfirst-control-plane/evidence/v9"
+        }
+      },
+      "manifest_hash": "38015f805ecd226194798e02537cadc98145b658df194b26a73092362a35a25d",
+      "manifest_version": "sayfirst-control-plane/evidence-export/v2",
+      "name": "v2_unknown_preimage_version"
+    },
+    {
+      "bundle": {
+        "contract_version": "1",
+        "entries": [
+          {
+            "body": {
+              "providers": []
+            },
+            "connection_id": "daemon",
+            "entry_hash": "6ef3b012954204384f1f176eb33c4937d016f9308d80f4204a02875ab51e7bb4",
+            "kind": "composition",
+            "preimage_version": "sayfirst-control-plane/evidence/v1",
+            "previous_hash": null,
+            "principal": {
+              "id": "daemon",
+              "kind": "service",
+              "via": []
+            },
+            "recorded_at": "2026-09-05T10:00:00Z",
+            "scope": "local",
+            "sequence": 1
+          },
+          {
+            "body": {
+              "basis": "caller_can_write",
+              "evaluated_at": "2026-09-05T10:00:00Z",
+              "grade": "observability",
+              "paths_inspected": 3
+            },
+            "connection_id": "connection-1",
+            "entry_hash": "948f855cdf7c272fbbf73c44821b3089c21fc6b0c0c89d0504757e5e3135dca8",
+            "kind": "grade",
+            "preimage_version": "sayfirst-control-plane/evidence/v1",
+            "previous_hash": "6ef3b012954204384f1f176eb33c4937d016f9308d80f4204a02875ab51e7bb4",
+            "principal": {
+              "id": "alice",
+              "kind": "user",
+              "via": []
+            },
+            "recorded_at": "2026-09-05T10:00:00Z",
+            "scope": "local",
+            "sequence": 2
+          },
+          {
+            "body": {
+              "arguments_digest": null,
+              "capability": "example.effect",
+              "correlation": null,
+              "correlation_source": "absent",
+              "decided_at": "2026-09-05T10:00:00Z",
+              "decision_id": "decision-1",
+              "decision_position": {
+                "position": 1,
+                "store_id": "store-a"
+              },
+              "evaluation_recipe": "sayfirst/policy-evaluation/v1",
+              "outcome": "allow",
+              "policy_version": "sha256:135a8b889c7435732f33e85f6043678f6d3b281d78a75d3a95e97140ff886311",
+              "principal_references": [
+                "user:alice"
+              ],
+              "reason": "policy_absent",
+              "rule_id": null
+            },
+            "connection_id": "connection-1",
+            "entry_hash": "65c2653408a8d8b8ceb5e14fde0fd6df303100ed7c53db97de2bffd895497ea7",
+            "kind": "effect",
+            "preimage_version": "sayfirst-control-plane/evidence/v1",
+            "previous_hash": "948f855cdf7c272fbbf73c44821b3089c21fc6b0c0c89d0504757e5e3135dca8",
+            "principal": {
+              "id": "alice",
+              "kind": "user",
+              "via": []
+            },
+            "recorded_at": "2026-09-05T10:00:00Z",
+            "scope": "local",
+            "sequence": 3
+          },
+          {
+            "body": {
+              "epoch_id": "epoch-1",
+              "event": "clean_stop",
+              "from_sequence": 1,
+              "through_sequence": 3
+            },
+            "connection_id": "daemon",
+            "entry_hash": "e803a37e06796d1347eca6441e1809e37195ff9e6bcf2006207cc07591f0476b",
+            "kind": "recovery",
+            "preimage_version": "sayfirst-control-plane/evidence/v1",
+            "previous_hash": "65c2653408a8d8b8ceb5e14fde0fd6df303100ed7c53db97de2bffd895497ea7",
+            "principal": {
+              "id": "daemon",
+              "kind": "service",
+              "via": []
+            },
+            "recorded_at": "2026-09-05T10:00:00Z",
+            "scope": "local",
+            "sequence": 4
+          }
+        ],
+        "entry_count": 4,
+        "from_sequence": 1,
+        "manifest_hash": "4c29d3fe3cd743a88a85b90eb9c9f1c70c5d0a3b57eb1e8e547fb6ed0780cf2f",
+        "manifest_version": "sayfirst-control-plane/evidence-export/v3",
+        "next_from": null,
+        "policy_versions": {
+          "sha256:135a8b889c7435732f33e85f6043678f6d3b281d78a75d3a95e97140ff886311": {
+            "content": "Zm9ybWF0ID0gMQpbcmV2aXNpb25dCnJlYXNvbiA9ICJ2ZWN0b3JzIgo=",
+            "state": "present"
+          }
+        },
+        "recovery_context": [],
+        "scope": "local",
+        "to_sequence": 4,
+        "verification": {
+          "condition": "intact",
+          "covers_an_entry": true,
+          "declared_gaps": [],
+          "expected": null,
+          "found": null,
+          "from_sequence": 1,
+          "grades": [
+            {
+              "connection_id": "connection-1",
+              "grade": "observability"
+            },
+            {
+              "connection_id": "daemon",
+              "grade": "unverified"
+            }
+          ],
+          "scope": "local",
+          "sequence": null,
+          "to_sequence": 4,
+          "up_to": 4,
+          "version": null
+        }
+      },
+      "manifest_hash": "4c29d3fe3cd743a88a85b90eb9c9f1c70c5d0a3b57eb1e8e547fb6ed0780cf2f",
+      "manifest_version": "sayfirst-control-plane/evidence-export/v3",
+      "name": "v3_closed_epoch_with_present_policy"
+    },
+    {
+      "bundle": {
+        "contract_version": "1",
+        "entries": [
+          {
+            "body": {
+              "providers": []
+            },
+            "connection_id": "daemon",
+            "entry_hash": "6ef3b012954204384f1f176eb33c4937d016f9308d80f4204a02875ab51e7bb4",
+            "kind": "composition",
+            "preimage_version": "sayfirst-control-plane/evidence/v1",
+            "previous_hash": null,
+            "principal": {
+              "id": "daemon",
+              "kind": "service",
+              "via": []
+            },
+            "recorded_at": "2026-09-05T10:00:00Z",
+            "scope": "local",
+            "sequence": 1
+          },
+          {
+            "body": {
+              "basis": "caller_can_write",
+              "evaluated_at": "2026-09-05T10:00:00Z",
+              "grade": "observability",
+              "paths_inspected": 3
+            },
+            "connection_id": "connection-1",
+            "entry_hash": "948f855cdf7c272fbbf73c44821b3089c21fc6b0c0c89d0504757e5e3135dca8",
+            "kind": "grade",
+            "preimage_version": "sayfirst-control-plane/evidence/v1",
+            "previous_hash": "6ef3b012954204384f1f176eb33c4937d016f9308d80f4204a02875ab51e7bb4",
+            "principal": {
+              "id": "alice",
+              "kind": "user",
+              "via": []
+            },
+            "recorded_at": "2026-09-05T10:00:00Z",
+            "scope": "local",
+            "sequence": 2
+          },
+          {
+            "body": {
+              "arguments_digest": null,
+              "capability": "example.effect",
+              "correlation": null,
+              "correlation_source": "absent",
+              "decided_at": "2026-09-05T10:00:00Z",
+              "decision_id": "decision-1",
+              "decision_position": {
+                "position": 1,
+                "store_id": "store-a"
+              },
+              "evaluation_recipe": "sayfirst/policy-evaluation/v1",
+              "outcome": "allow",
+              "policy_version": "sha256:135a8b889c7435732f33e85f6043678f6d3b281d78a75d3a95e97140ff886311",
+              "principal_references": [
+                "user:alice"
+              ],
+              "reason": "policy_absent",
+              "rule_id": null
+            },
+            "connection_id": "connection-1",
+            "entry_hash": "65c2653408a8d8b8ceb5e14fde0fd6df303100ed7c53db97de2bffd895497ea7",
+            "kind": "effect",
+            "preimage_version": "sayfirst-control-plane/evidence/v1",
+            "previous_hash": "948f855cdf7c272fbbf73c44821b3089c21fc6b0c0c89d0504757e5e3135dca8",
+            "principal": {
+              "id": "alice",
+              "kind": "user",
+              "via": []
+            },
+            "recorded_at": "2026-09-05T10:00:00Z",
+            "scope": "local",
+            "sequence": 3
+          },
+          {
+            "body": {
+              "epoch_id": "epoch-1",
+              "event": "clean_stop",
+              "from_sequence": 1,
+              "through_sequence": 3
+            },
+            "connection_id": "daemon",
+            "entry_hash": "e803a37e06796d1347eca6441e1809e37195ff9e6bcf2006207cc07591f0476b",
+            "kind": "recovery",
+            "preimage_version": "sayfirst-control-plane/evidence/v1",
+            "previous_hash": "65c2653408a8d8b8ceb5e14fde0fd6df303100ed7c53db97de2bffd895497ea7",
+            "principal": {
+              "id": "daemon",
+              "kind": "service",
+              "via": []
+            },
+            "recorded_at": "2026-09-05T10:00:00Z",
+            "scope": "local",
+            "sequence": 4
+          }
+        ],
+        "entry_count": 4,
+        "from_sequence": 1,
+        "manifest_hash": "11a4e3c89b9bebc8c8ba4fc74de13804b60186a603b18020f5e33ff179894539",
+        "manifest_version": "sayfirst-control-plane/evidence-export/v3",
+        "next_from": null,
+        "policy_versions": {
+          "sha256:135a8b889c7435732f33e85f6043678f6d3b281d78a75d3a95e97140ff886311": {
+            "state": "absent"
+          }
+        },
+        "recovery_context": [],
+        "scope": "local",
+        "to_sequence": 4,
+        "verification": {
+          "condition": "intact",
+          "covers_an_entry": true,
+          "declared_gaps": [],
+          "expected": null,
+          "found": null,
+          "from_sequence": 1,
+          "grades": [
+            {
+              "connection_id": "connection-1",
+              "grade": "observability"
+            },
+            {
+              "connection_id": "daemon",
+              "grade": "unverified"
+            }
+          ],
+          "scope": "local",
+          "sequence": null,
+          "to_sequence": 4,
+          "up_to": 4,
+          "version": null
+        }
+      },
+      "manifest_hash": "11a4e3c89b9bebc8c8ba4fc74de13804b60186a603b18020f5e33ff179894539",
+      "manifest_version": "sayfirst-control-plane/evidence-export/v3",
+      "name": "v3_changed_availability_state_moves_the_digest"
+    },
+    {
+      "bundle": {
+        "contract_version": "1",
+        "entries": [
+          {
+            "body": {
+              "providers": []
+            },
+            "connection_id": "daemon",
+            "entry_hash": "6ef3b012954204384f1f176eb33c4937d016f9308d80f4204a02875ab51e7bb4",
+            "kind": "composition",
+            "preimage_version": "sayfirst-control-plane/evidence/v1",
+            "previous_hash": null,
+            "principal": {
+              "id": "daemon",
+              "kind": "service",
+              "via": []
+            },
+            "recorded_at": "2026-09-05T10:00:00Z",
+            "scope": "local",
+            "sequence": 1
+          },
+          {
+            "body": {
+              "basis": "caller_can_write",
+              "evaluated_at": "2026-09-05T10:00:00Z",
+              "grade": "observability",
+              "paths_inspected": 3
+            },
+            "connection_id": "connection-1",
+            "entry_hash": "948f855cdf7c272fbbf73c44821b3089c21fc6b0c0c89d0504757e5e3135dca8",
+            "kind": "grade",
+            "preimage_version": "sayfirst-control-plane/evidence/v1",
+            "previous_hash": "6ef3b012954204384f1f176eb33c4937d016f9308d80f4204a02875ab51e7bb4",
+            "principal": {
+              "id": "alice",
+              "kind": "user",
+              "via": []
+            },
+            "recorded_at": "2026-09-05T10:00:00Z",
+            "scope": "local",
+            "sequence": 2
+          },
+          {
+            "body": {
+              "arguments_digest": null,
+              "capability": "example.effect",
+              "correlation": null,
+              "correlation_source": "absent",
+              "decided_at": "2026-09-05T10:00:00Z",
+              "decision_id": "decision-1",
+              "decision_position": {
+                "position": 1,
+                "store_id": "store-a"
+              },
+              "evaluation_recipe": "sayfirst/policy-evaluation/v1",
+              "outcome": "allow",
+              "policy_version": "sha256:135a8b889c7435732f33e85f6043678f6d3b281d78a75d3a95e97140ff886311",
+              "principal_references": [
+                "user:alice"
+              ],
+              "reason": "policy_absent",
+              "rule_id": null
+            },
+            "connection_id": "connection-1",
+            "entry_hash": "65c2653408a8d8b8ceb5e14fde0fd6df303100ed7c53db97de2bffd895497ea7",
+            "kind": "effect",
+            "preimage_version": "sayfirst-control-plane/evidence/v1",
+            "previous_hash": "948f855cdf7c272fbbf73c44821b3089c21fc6b0c0c89d0504757e5e3135dca8",
+            "principal": {
+              "id": "alice",
+              "kind": "user",
+              "via": []
+            },
+            "recorded_at": "2026-09-05T10:00:00Z",
+            "scope": "local",
+            "sequence": 3
+          },
+          {
+            "body": {
+              "epoch_id": "epoch-1",
+              "event": "clean_stop",
+              "from_sequence": 1,
+              "through_sequence": 3
+            },
+            "connection_id": "daemon",
+            "entry_hash": "e803a37e06796d1347eca6441e1809e37195ff9e6bcf2006207cc07591f0476b",
+            "kind": "recovery",
+            "preimage_version": "sayfirst-control-plane/evidence/v1",
+            "previous_hash": "65c2653408a8d8b8ceb5e14fde0fd6df303100ed7c53db97de2bffd895497ea7",
+            "principal": {
+              "id": "daemon",
+              "kind": "service",
+              "via": []
+            },
+            "recorded_at": "2026-09-05T10:00:00Z",
+            "scope": "local",
+            "sequence": 4
+          }
+        ],
+        "entry_count": 4,
+        "from_sequence": 1,
+        "manifest_hash": "cacd442f364791f83fe62e299c07f1fdd6ca2a9631f05067c458ba13765719af",
+        "manifest_version": "sayfirst-control-plane/evidence-export/v3",
+        "next_from": null,
+        "policy_versions": {
+          "sha256:135a8b889c7435732f33e85f6043678f6d3b281d78a75d3a95e97140ff886311": {
+            "state": "damaged"
+          }
+        },
+        "recovery_context": [],
+        "scope": "local",
+        "to_sequence": 4,
+        "verification": {
+          "condition": "intact",
+          "covers_an_entry": true,
+          "declared_gaps": [],
+          "expected": null,
+          "found": null,
+          "from_sequence": 1,
+          "grades": [
+            {
+              "connection_id": "connection-1",
+              "grade": "observability"
+            },
+            {
+              "connection_id": "daemon",
+              "grade": "unverified"
+            }
+          ],
+          "scope": "local",
+          "sequence": null,
+          "to_sequence": 4,
+          "up_to": 4,
+          "version": null
+        }
+      },
+      "manifest_hash": "cacd442f364791f83fe62e299c07f1fdd6ca2a9631f05067c458ba13765719af",
+      "manifest_version": "sayfirst-control-plane/evidence-export/v3",
+      "name": "v3_damaged_availability_state"
+    },
+    {
+      "bundle": {
+        "contract_version": "1",
+        "entries": [
+          {
+            "body": {
+              "providers": []
+            },
+            "connection_id": "daemon",
+            "entry_hash": "6ef3b012954204384f1f176eb33c4937d016f9308d80f4204a02875ab51e7bb4",
+            "kind": "composition",
+            "preimage_version": "sayfirst-control-plane/evidence/v1",
+            "previous_hash": null,
+            "principal": {
+              "id": "daemon",
+              "kind": "service",
+              "via": []
+            },
+            "recorded_at": "2026-09-05T10:00:00Z",
+            "scope": "local",
+            "sequence": 1
+          },
+          {
+            "body": {
+              "basis": "caller_can_write",
+              "evaluated_at": "2026-09-05T10:00:00Z",
+              "grade": "observability",
+              "paths_inspected": 3
+            },
+            "connection_id": "connection-1",
+            "entry_hash": "948f855cdf7c272fbbf73c44821b3089c21fc6b0c0c89d0504757e5e3135dca8",
+            "kind": "grade",
+            "preimage_version": "sayfirst-control-plane/evidence/v1",
+            "previous_hash": "6ef3b012954204384f1f176eb33c4937d016f9308d80f4204a02875ab51e7bb4",
+            "principal": {
+              "id": "alice",
+              "kind": "user",
+              "via": []
+            },
+            "recorded_at": "2026-09-05T10:00:00Z",
+            "scope": "local",
+            "sequence": 2
+          },
+          {
+            "body": {
+              "arguments_digest": null,
+              "capability": "example.effect",
+              "correlation": null,
+              "correlation_source": "absent",
+              "decided_at": "2026-09-05T10:00:00Z",
+              "decision_id": "decision-1",
+              "decision_position": {
+                "position": 1,
+                "store_id": "store-a"
+              },
+              "evaluation_recipe": "sayfirst/policy-evaluation/v1",
+              "outcome": "allow",
+              "policy_version": "sha256:135a8b889c7435732f33e85f6043678f6d3b281d78a75d3a95e97140ff886311",
+              "principal_references": [
+                "user:alice"
+              ],
+              "reason": "policy_absent",
+              "rule_id": null
+            },
+            "connection_id": "connection-1",
+            "entry_hash": "65c2653408a8d8b8ceb5e14fde0fd6df303100ed7c53db97de2bffd895497ea7",
+            "kind": "effect",
+            "preimage_version": "sayfirst-control-plane/evidence/v1",
+            "previous_hash": "948f855cdf7c272fbbf73c44821b3089c21fc6b0c0c89d0504757e5e3135dca8",
+            "principal": {
+              "id": "alice",
+              "kind": "user",
+              "via": []
+            },
+            "recorded_at": "2026-09-05T10:00:00Z",
+            "scope": "local",
+            "sequence": 3
+          }
+        ],
+        "entry_count": 3,
+        "from_sequence": 1,
+        "manifest_hash": "7c266258925374e82e305f7be1dbcf01d53d091dfbf088232c16b36fda495e8f",
+        "manifest_version": "sayfirst-control-plane/evidence-export/v3",
+        "next_from": null,
+        "policy_versions": {
+          "sha256:135a8b889c7435732f33e85f6043678f6d3b281d78a75d3a95e97140ff886311": {
+            "content": "Zm9ybWF0ID0gMQpbcmV2aXNpb25dCnJlYXNvbiA9ICJ2ZWN0b3JzIgo=",
+            "state": "present"
+          }
+        },
+        "recovery_context": [
+          {
+            "body": {
+              "epoch_id": "epoch-1",
+              "event": "clean_stop",
+              "from_sequence": 1,
+              "through_sequence": 3
+            },
+            "connection_id": "daemon",
+            "entry_hash": "e803a37e06796d1347eca6441e1809e37195ff9e6bcf2006207cc07591f0476b",
+            "kind": "recovery",
+            "preimage_version": "sayfirst-control-plane/evidence/v1",
+            "previous_hash": "65c2653408a8d8b8ceb5e14fde0fd6df303100ed7c53db97de2bffd895497ea7",
+            "principal": {
+              "id": "daemon",
+              "kind": "service",
+              "via": []
+            },
+            "recorded_at": "2026-09-05T10:00:00Z",
+            "scope": "local",
+            "sequence": 4
+          }
+        ],
+        "scope": "local",
+        "to_sequence": 3,
+        "verification": {
+          "condition": "intact",
+          "covers_an_entry": true,
+          "declared_gaps": [],
+          "expected": null,
+          "found": null,
+          "from_sequence": 1,
+          "grades": [
+            {
+              "connection_id": "connection-1",
+              "grade": "observability"
+            },
+            {
+              "connection_id": "daemon",
+              "grade": "unverified"
+            }
+          ],
+          "scope": "local",
+          "sequence": null,
+          "to_sequence": 3,
+          "up_to": 3,
+          "version": null
+        }
+      },
+      "manifest_hash": "7c266258925374e82e305f7be1dbcf01d53d091dfbf088232c16b36fda495e8f",
+      "manifest_version": "sayfirst-control-plane/evidence-export/v3",
+      "name": "v3_partial_range_with_recovery_context"
+    },
+    {
+      "bundle": {
+        "contract_version": "1",
+        "entries": [
+          {
+            "body": {
+              "providers": []
+            },
+            "connection_id": "daemon",
+            "entry_hash": "6ef3b012954204384f1f176eb33c4937d016f9308d80f4204a02875ab51e7bb4",
+            "kind": "composition",
+            "preimage_version": "sayfirst-control-plane/evidence/v1",
+            "previous_hash": null,
+            "principal": {
+              "id": "daemon",
+              "kind": "service",
+              "via": []
+            },
+            "recorded_at": "2026-09-05T10:00:00Z",
+            "scope": "local",
+            "sequence": 1
+          },
+          {
+            "body": {
+              "basis": "caller_can_write",
+              "evaluated_at": "2026-09-05T10:00:00Z",
+              "grade": "observability",
+              "paths_inspected": 3
+            },
+            "connection_id": "connection-1",
+            "entry_hash": "948f855cdf7c272fbbf73c44821b3089c21fc6b0c0c89d0504757e5e3135dca8",
+            "kind": "grade",
+            "preimage_version": "sayfirst-control-plane/evidence/v1",
+            "previous_hash": "6ef3b012954204384f1f176eb33c4937d016f9308d80f4204a02875ab51e7bb4",
+            "principal": {
+              "id": "alice",
+              "kind": "user",
+              "via": []
+            },
+            "recorded_at": "2026-09-05T10:00:00Z",
+            "scope": "local",
+            "sequence": 2
+          },
+          {
+            "body": {
+              "arguments_digest": null,
+              "capability": "example.effect",
+              "correlation": null,
+              "correlation_source": "absent",
+              "decided_at": "2026-09-05T10:00:00Z",
+              "decision_id": "decision-1",
+              "decision_position": {
+                "position": 1,
+                "store_id": "store-a"
+              },
+              "evaluation_recipe": "sayfirst/policy-evaluation/v1",
+              "outcome": "allow",
+              "policy_version": "sha256:135a8b889c7435732f33e85f6043678f6d3b281d78a75d3a95e97140ff886311",
+              "principal_references": [
+                "user:alice"
+              ],
+              "reason": "policy_absent",
+              "rule_id": null
+            },
+            "connection_id": "connection-1",
+            "entry_hash": "65c2653408a8d8b8ceb5e14fde0fd6df303100ed7c53db97de2bffd895497ea7",
+            "kind": "effect",
+            "preimage_version": "sayfirst-control-plane/evidence/v1",
+            "previous_hash": "948f855cdf7c272fbbf73c44821b3089c21fc6b0c0c89d0504757e5e3135dca8",
+            "principal": {
+              "id": "alice",
+              "kind": "user",
+              "via": []
+            },
+            "recorded_at": "2026-09-05T10:00:00Z",
+            "scope": "local",
+            "sequence": 3
+          }
+        ],
+        "entry_count": 3,
+        "from_sequence": 1,
+        "manifest_hash": "3c8d098e0579fc18aec9928cfa5d5fd32be8c4f87e5840a9e643f7e37f4a792b",
+        "manifest_version": "sayfirst-control-plane/evidence-export/v3",
+        "next_from": 4,
+        "policy_versions": {
+          "sha256:135a8b889c7435732f33e85f6043678f6d3b281d78a75d3a95e97140ff886311": {
+            "content": "Zm9ybWF0ID0gMQpbcmV2aXNpb25dCnJlYXNvbiA9ICJ2ZWN0b3JzIgo=",
+            "state": "present"
+          }
+        },
+        "recovery_context": [],
+        "scope": "local",
+        "to_sequence": 3,
+        "verification": {
+          "condition": "intact",
+          "covers_an_entry": true,
+          "declared_gaps": [],
+          "expected": null,
+          "found": null,
+          "from_sequence": 1,
+          "grades": [
+            {
+              "connection_id": "connection-1",
+              "grade": "observability"
+            },
+            {
+              "connection_id": "daemon",
+              "grade": "unverified"
+            }
+          ],
+          "scope": "local",
+          "sequence": null,
+          "to_sequence": 3,
+          "up_to": 3,
+          "version": null
+        }
+      },
+      "manifest_hash": "3c8d098e0579fc18aec9928cfa5d5fd32be8c4f87e5840a9e643f7e37f4a792b",
+      "manifest_version": "sayfirst-control-plane/evidence-export/v3",
+      "name": "v3_altered_continuation"
+    },
+    {
+      "bundle": {
+        "contract_version": "1",
+        "entries": [
+          {
+            "body": {
+              "providers": []
+            },
+            "connection_id": "daemon",
+            "entry_hash": "6ef3b012954204384f1f176eb33c4937d016f9308d80f4204a02875ab51e7bb4",
+            "kind": "composition",
+            "preimage_version": "sayfirst-control-plane/evidence/v1",
+            "previous_hash": null,
+            "principal": {
+              "id": "daemon",
+              "kind": "service",
+              "via": []
+            },
+            "recorded_at": "2026-09-05T10:00:00Z",
+            "scope": "local",
+            "sequence": 1
+          },
+          {
+            "body": {
+              "basis": "caller_can_write",
+              "evaluated_at": "2026-09-05T10:00:00Z",
+              "grade": "observability",
+              "paths_inspected": 3
+            },
+            "connection_id": "connection-1",
+            "entry_hash": "948f855cdf7c272fbbf73c44821b3089c21fc6b0c0c89d0504757e5e3135dca8",
+            "kind": "grade",
+            "preimage_version": "sayfirst-control-plane/evidence/v1",
+            "previous_hash": "6ef3b012954204384f1f176eb33c4937d016f9308d80f4204a02875ab51e7bb4",
+            "principal": {
+              "id": "alice",
+              "kind": "user",
+              "via": []
+            },
+            "recorded_at": "2026-09-05T10:00:00Z",
+            "scope": "local",
+            "sequence": 2
+          }
+        ],
+        "entry_count": 2,
+        "from_sequence": 1,
+        "manifest_hash": "3cdbe290e388250679684cb1ace66806dfdef2cc742e9367ba1e592f6b405292",
+        "manifest_version": "sayfirst-control-plane/evidence-export/v3",
+        "next_from": null,
+        "policy_versions": {},
+        "recovery_context": [],
+        "scope": "local",
+        "to_sequence": 2,
+        "verification": {
+          "condition": "intact",
+          "covers_an_entry": true,
+          "declared_gaps": [],
+          "expected": null,
+          "found": null,
+          "from_sequence": 1,
+          "grades": [
+            {
+              "connection_id": "connection-1",
+              "grade": "observability"
+            },
+            {
+              "connection_id": "daemon",
+              "grade": "unverified"
+            }
+          ],
+          "scope": "local",
+          "sequence": null,
+          "to_sequence": 2,
+          "up_to": 2,
+          "version": null
+        }
+      },
+      "manifest_hash": "3cdbe290e388250679684cb1ace66806dfdef2cc742e9367ba1e592f6b405292",
+      "manifest_version": "sayfirst-control-plane/evidence-export/v3",
+      "name": "v3_grade_only_range_with_an_empty_map"
+    },
+    {
+      "bundle": {
+        "contract_version": "1",
+        "entries": [
+          {
+            "body": {
+              "providers": []
+            },
+            "connection_id": "daemon",
+            "entry_hash": "6ef3b012954204384f1f176eb33c4937d016f9308d80f4204a02875ab51e7bb4",
+            "kind": "composition",
+            "preimage_version": "sayfirst-control-plane/evidence/v1",
+            "previous_hash": null,
+            "principal": {
+              "id": "daemon",
+              "kind": "service",
+              "via": []
+            },
+            "recorded_at": "2026-09-05T10:00:00Z",
+            "scope": "local",
+            "sequence": 1
+          },
+          {
+            "body": {
+              "basis": "caller_can_write",
+              "evaluated_at": "2026-09-05T10:00:00Z",
+              "grade": "observability",
+              "paths_inspected": 3
+            },
+            "connection_id": "connection-1",
+            "entry_hash": "948f855cdf7c272fbbf73c44821b3089c21fc6b0c0c89d0504757e5e3135dca8",
+            "kind": "grade",
+            "preimage_version": "sayfirst-control-plane/evidence/v1",
+            "previous_hash": "6ef3b012954204384f1f176eb33c4937d016f9308d80f4204a02875ab51e7bb4",
+            "principal": {
+              "id": "alice",
+              "kind": "user",
+              "via": []
+            },
+            "recorded_at": "2026-09-05T10:00:00Z",
+            "scope": "local",
+            "sequence": 2
+          },
+          {
+            "body": {
+              "arguments_digest": null,
+              "capability": "example.effect",
+              "correlation": null,
+              "correlation_source": "absent",
+              "decided_at": "2026-09-05T10:00:00Z",
+              "decision_id": "decision-1",
+              "decision_position": {
+                "position": 1,
+                "store_id": "store-a"
+              },
+              "evaluation_recipe": "sayfirst/policy-evaluation/v1",
+              "outcome": "allow",
+              "policy_version": "sha256:135a8b889c7435732f33e85f6043678f6d3b281d78a75d3a95e97140ff886311",
+              "principal_references": [
+                "user:alice"
+              ],
+              "reason": "policy_absent",
+              "rule_id": null
+            },
+            "connection_id": "connection-1",
+            "entry_hash": "65c2653408a8d8b8ceb5e14fde0fd6df303100ed7c53db97de2bffd895497ea7",
+            "kind": "effect",
+            "preimage_version": "sayfirst-control-plane/evidence/v1",
+            "previous_hash": "948f855cdf7c272fbbf73c44821b3089c21fc6b0c0c89d0504757e5e3135dca8",
+            "principal": {
+              "id": "alice",
+              "kind": "user",
+              "via": []
+            },
+            "recorded_at": "2026-09-05T10:00:00Z",
+            "scope": "local",
+            "sequence": 3
+          },
+          {
+            "body": {
+              "epoch_id": "epoch-1",
+              "event": "clean_stop",
+              "from_sequence": 1,
+              "through_sequence": 3
+            },
+            "connection_id": "daemon",
+            "entry_hash": "e803a37e06796d1347eca6441e1809e37195ff9e6bcf2006207cc07591f0476b",
+            "kind": "recovery",
+            "preimage_version": "sayfirst-control-plane/evidence/v1",
+            "previous_hash": "65c2653408a8d8b8ceb5e14fde0fd6df303100ed7c53db97de2bffd895497ea7",
+            "principal": {
+              "id": "daemon",
+              "kind": "service",
+              "via": []
+            },
+            "recorded_at": "2026-09-05T10:00:00Z",
+            "scope": "local",
+            "sequence": 4
+          }
+        ],
+        "entry_count": 4,
+        "from_sequence": 1,
+        "manifest_hash": "6cb4525d83ff7f66dacc5f43c7dc2792106e4ebcad328359ccc18ddeefafffd8",
+        "manifest_version": "sayfirst-control-plane/evidence-export/v3",
+        "next_from": null,
+        "policy_versions": {
+          "sha256:135a8b889c7435732f33e85f6043678f6d3b281d78a75d3a95e97140ff886311": {
+            "content": "Zm9ybWF0ID0gMQpbcmV2aXNpb25dCnJlYXNvbiA9ICJ2ZWN0b3JzIgo=",
+            "state": "present"
+          }
+        },
+        "recovery_context": [],
+        "scope": "local",
+        "to_sequence": 4,
+        "verification": {
+          "condition": "intact",
+          "covers_an_entry": true,
+          "declared_gaps": [],
+          "expected": null,
+          "found": null,
+          "from_sequence": 1,
+          "grades": [
+            {
+              "connection_id": "connection-1",
+              "grade": "evidence"
+            },
+            {
+              "connection_id": "daemon",
+              "grade": "unverified"
+            }
+          ],
+          "scope": "local",
+          "sequence": null,
+          "to_sequence": 4,
+          "up_to": 4,
+          "version": null
+        }
+      },
+      "manifest_hash": "6cb4525d83ff7f66dacc5f43c7dc2792106e4ebcad328359ccc18ddeefafffd8",
+      "manifest_version": "sayfirst-control-plane/evidence-export/v3",
+      "name": "v3_changed_verdict_grade_moves_the_digest"
+    }
+  ],
+  "x-contract-generation": 1,
+  "x-spdx-license-identifier": "Apache-2.0"
+}

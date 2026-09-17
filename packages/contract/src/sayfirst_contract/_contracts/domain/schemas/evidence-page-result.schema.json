@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "description": "A bounded raw range and its verification.",
+  "properties": {
+    "contract_version": {
+      "const": "1",
+      "type": "string"
+    },
+    "entries": {
+      "items": {
+        "$ref": "evidence-entry.schema.json"
+      },
+      "maxItems": 100,
+      "type": "array"
+    },
+    "from_sequence": {
+      "minimum": 1,
+      "type": "integer"
+    },
+    "next_from": {
+      "minimum": 1,
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "scope": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+      "type": "string"
+    },
+    "to_sequence": {
+      "minimum": 1,
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "verification": {
+      "$ref": "evidence-verdict.schema.json"
+    }
+  },
+  "required": [
+    "contract_version",
+    "scope",
+    "from_sequence",
+    "to_sequence",
+    "entries",
+    "verification",
+    "next_from"
+  ],
+  "title": "Evidence page result",
+  "type": "object",
+  "x-contract-generation": 1,
+  "x-spdx-license-identifier": "Apache-2.0"
+}

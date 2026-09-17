@@ -1,0 +1,49 @@
+# SPDX-License-Identifier: Apache-2.0
+[project]
+name = "sayfirstd"
+version = "0.2.0"
+description = "The operator surface of the open control plane's daemon"
+readme = "README.md"
+requires-python = ">=3.12,<3.15"
+dependencies = ["sayfirst-contract==0.2.0"]
+license = "Apache-2.0"
+
+authors = [{ name = "fredaime", email = "frederic.aime@gmail.com" }]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+]
+
+# The public repository this distribution sends a reader to. It does not exist
+# yet: article 0 creates it fresh in the act that publishes, and these are the
+# names the operator chose for that act. `tests/test_pointers_survive_publication.py`
+# holds them, so a rename lands in every project file and in the guard together
+# or not at all. No licence classifier: the licence is declared as an expression
+# above, and an index refuses a distribution that carries both.
+[project.urls]
+Repository = "https://github.com/fredaime/sayfirst-control-plane"
+Documentation = "https://github.com/fredaime/sayfirst-control-plane/blob/main/packages/cli/README.md"
+Changelog = "https://github.com/fredaime/sayfirst-control-plane/blob/main/CHANGELOG.md"
+
+[project.scripts]
+sayfirstd = "sayfirstd.main:run"
+
+[build-system]
+requires = ["hatchling==1.32.0"]
+build-backend = "hatchling.build"
+
+[tool.uv.sources]
+sayfirst-contract = { workspace = true }
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/sayfirstd"]
+
+[tool.hatch.build.targets.sdist.force-include]
+"../../LICENSE" = "LICENSE"
+"../../NOTICE" = "NOTICE"
+
+[tool.hatch.build.targets.wheel.hooks.custom]
+path = "hatch_build.py"
