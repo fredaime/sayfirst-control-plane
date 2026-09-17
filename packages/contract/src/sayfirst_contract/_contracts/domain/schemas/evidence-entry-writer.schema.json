@@ -1,0 +1,697 @@
+{
+  "$defs": {
+    "capture": {
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "bytes": {
+              "maximum": 65536,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "captured": {
+              "const": true
+            },
+            "content": {
+              "description": "Captured payload after the configured provider ran.",
+              "type": "string"
+            },
+            "encoding": {
+              "const": "base64"
+            },
+            "provider": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "truncated": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "captured",
+            "provider",
+            "bytes",
+            "truncated",
+            "content"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "captured": {
+              "const": false
+            },
+            "provider": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "withheld": {
+              "const": "redaction_failed"
+            }
+          },
+          "required": [
+            "captured",
+            "provider",
+            "withheld"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "composition-body": {
+      "additionalProperties": false,
+      "properties": {
+        "providers": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "interface": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "provider": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "version": {
+                "minimum": 1,
+                "type": "integer"
+              }
+            },
+            "required": [
+              "interface",
+              "version",
+              "provider"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "recording_epoch": {
+          "description": "The recording epoch the writer was in; an epoch that did not close cleanly is unknown coverage for every asynchronous entry inside it.",
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "providers"
+      ],
+      "type": "object"
+    },
+    "effect-body": {
+      "additionalProperties": false,
+      "description": "An effect a new writer records: the decision's answer and inputs copied inside the hashed body, and its position in the durable decision store.",
+      "properties": {
+        "arguments_digest": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "capability": {
+          "maxLength": 128,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9]*(\\.[a-z][a-z0-9]*)*$",
+          "type": "string"
+        },
+        "capture": {
+          "$ref": "#/$defs/capture"
+        },
+        "correlation": {
+          "maxLength": 128,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "correlation_source": {
+          "description": "Who chose the bytes of correlation: the boundary that asked, or nobody. The daemon cannot prove a supplied value is an identifier; this marks its provenance.",
+          "enum": [
+            "boundary_supplied",
+            "absent"
+          ],
+          "type": "string"
+        },
+        "decided_at": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "decision_id": {
+          "maxLength": 128,
+          "minLength": 1,
+          "type": "string"
+        },
+        "decision_position": {
+          "additionalProperties": false,
+          "properties": {
+            "position": {
+              "minimum": 1,
+              "type": "integer"
+            },
+            "store_id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "store_id",
+            "position"
+          ],
+          "type": "object"
+        },
+        "evaluation_recipe": {
+          "description": "The identifier of the evaluation recipe the decision was taken under; a reader that does not know it reports the record as unverifiable, never evaluates it under other semantics.",
+          "minLength": 1,
+          "type": "string"
+        },
+        "outcome": {
+          "enum": [
+            "allow",
+            "deny",
+            "suspend"
+          ],
+          "type": "string"
+        },
+        "policy_version": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "principal_references": {
+          "description": "The principal references the evaluation read, sorted and unique: the caller's own reference intersected with the references named by every rule for the asked scope and capability (M3). Recorded so a reader can re-derive the answer without a directory.",
+          "items": {
+            "maxLength": 262,
+            "minLength": 6,
+            "type": "string"
+          },
+          "maxItems": 131072,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "reason": {
+          "enum": [
+            "policy_allows",
+            "policy_denies",
+            "policy_absent",
+            "policy_requires_review",
+            "capability_unknown",
+            "approval_granted",
+            "approval_rejected"
+          ],
+          "type": "string"
+        },
+        "recording_epoch": {
+          "description": "The recording epoch the writer was in; an epoch that did not close cleanly is unknown coverage for every asynchronous entry inside it.",
+          "minLength": 1,
+          "type": "string"
+        },
+        "rule_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "capability",
+        "decision_id",
+        "outcome",
+        "decided_at",
+        "policy_version",
+        "reason",
+        "rule_id",
+        "arguments_digest",
+        "correlation",
+        "correlation_source",
+        "principal_references",
+        "evaluation_recipe",
+        "decision_position"
+      ],
+      "type": "object"
+    },
+    "gap-body": {
+      "additionalProperties": false,
+      "properties": {
+        "accounting": {
+          "description": "What the count counts: physical records the bytes could not identify, known decisions by identity, or other counted events. Physical and decision counts may describe one failure and are never summed; a historical marker without this member has unknown accounting.",
+          "enum": [
+            "physical_record",
+            "decision",
+            "event"
+          ],
+          "type": "string"
+        },
+        "count": {
+          "minimum": 1,
+          "type": "integer"
+        },
+        "decision_ids": {
+          "description": "The identities of known decisions this marker declares lost, sorted by position and paired one to one with decision_positions; a loss larger than the bound is several markers, never an id-less one.",
+          "items": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string"
+          },
+          "maxItems": 8192,
+          "minItems": 1,
+          "type": "array",
+          "uniqueItems": true
+        },
+        "decision_positions": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "position": {
+                "minimum": 1,
+                "type": "integer"
+              },
+              "store_id": {
+                "minLength": 1,
+                "type": "string"
+              }
+            },
+            "required": [
+              "store_id",
+              "position"
+            ],
+            "type": "object"
+          },
+          "maxItems": 8192,
+          "minItems": 1,
+          "type": "array"
+        },
+        "first_at": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "kinds": {
+          "additionalProperties": {
+            "minimum": 1,
+            "type": "integer"
+          },
+          "type": "object"
+        },
+        "last_at": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "reason": {
+          "enum": [
+            "dropped",
+            "purged",
+            "torn",
+            "unflushed"
+          ],
+          "type": "string"
+        },
+        "recording_epoch": {
+          "description": "The recording epoch the writer was in; an epoch that did not close cleanly is unknown coverage for every asynchronous entry inside it.",
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "reason",
+        "count",
+        "first_at",
+        "last_at",
+        "kinds"
+      ],
+      "type": "object"
+    },
+    "grade-body": {
+      "additionalProperties": false,
+      "properties": {
+        "basis": {
+          "enum": [
+            "caller_can_write",
+            "caller_cannot_write",
+            "access_not_established"
+          ],
+          "type": "string"
+        },
+        "evaluated_at": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "grade": {
+          "enum": [
+            "unverified",
+            "observability",
+            "evidence"
+          ],
+          "type": "string"
+        },
+        "paths_inspected": {
+          "minimum": 0,
+          "type": "integer"
+        },
+        "recording_epoch": {
+          "description": "The recording epoch the writer was in; an epoch that did not close cleanly is unknown coverage for every asynchronous entry inside it.",
+          "minLength": 1,
+          "type": "string"
+        }
+      },
+      "required": [
+        "grade",
+        "basis",
+        "evaluated_at",
+        "paths_inspected"
+      ],
+      "type": "object"
+    },
+    "principal": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "kind": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "via": {
+          "items": {
+            "$ref": "#/$defs/principal"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "kind",
+        "id",
+        "via"
+      ],
+      "type": "object"
+    },
+    "recovery-body": {
+      "description": "A synchronous recovery marker: the once-only baseline, or the closure of a producer epoch, clean or unclean. Written by the daemon on its own connection, never by the asynchronous emitter.",
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "established_at": {
+              "format": "date-time",
+              "type": "string"
+            },
+            "event": {
+              "const": "baseline"
+            },
+            "first_covered_sequence": {
+              "minimum": 1,
+              "type": "integer"
+            },
+            "first_decision_position": {
+              "const": 1
+            },
+            "legacy_effects_without_authority": {
+              "minimum": 0,
+              "type": "integer"
+            },
+            "recording_epoch": {
+              "description": "The recording epoch the writer was in; an epoch that did not close cleanly is unknown coverage for every asynchronous entry inside it.",
+              "minLength": 1,
+              "type": "string"
+            },
+            "store_id": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "event",
+            "store_id",
+            "first_decision_position",
+            "first_covered_sequence",
+            "legacy_effects_without_authority",
+            "established_at",
+            "recording_epoch"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "epoch_id": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "event": {
+              "const": "clean_stop"
+            },
+            "from_sequence": {
+              "minimum": 1,
+              "type": "integer"
+            },
+            "recording_epoch": {
+              "description": "The recording epoch the writer was in; an epoch that did not close cleanly is unknown coverage for every asynchronous entry inside it.",
+              "minLength": 1,
+              "type": "string"
+            },
+            "through_sequence": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "event",
+            "epoch_id",
+            "from_sequence",
+            "through_sequence",
+            "recording_epoch"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "coverage": {
+              "const": "unknown"
+            },
+            "epoch_id": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "event": {
+              "const": "unclean_stop"
+            },
+            "from_sequence": {
+              "minimum": 1,
+              "type": "integer"
+            },
+            "lost_event_count": {
+              "description": "Deliberately null: an unclean stop cannot inventory what the asynchronous emitter held.",
+              "type": "null"
+            },
+            "possibly_lost_kinds": {
+              "items": {
+                "enum": [
+                  "effect",
+                  "grade",
+                  "composition",
+                  "gap",
+                  "recovery"
+                ],
+                "type": "string"
+              },
+              "minItems": 4,
+              "type": "array",
+              "uniqueItems": true
+            },
+            "recording_epoch": {
+              "description": "The recording epoch the writer was in; an epoch that did not close cleanly is unknown coverage for every asynchronous entry inside it.",
+              "minLength": 1,
+              "type": "string"
+            },
+            "through_sequence": {
+              "minimum": 1,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "event",
+            "epoch_id",
+            "from_sequence",
+            "through_sequence",
+            "lost_event_count",
+            "possibly_lost_kinds",
+            "coverage",
+            "recording_epoch"
+          ],
+          "type": "object"
+        }
+      ]
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "effect"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "body": {
+            "$ref": "#/$defs/effect-body"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "grade"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "body": {
+            "$ref": "#/$defs/grade-body"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "gap"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "body": {
+            "$ref": "#/$defs/gap-body"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "composition"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "body": {
+            "$ref": "#/$defs/composition-body"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "recovery"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "body": {
+            "$ref": "#/$defs/recovery-body"
+          }
+        }
+      }
+    }
+  ],
+  "description": "One immutable entry as a writer of the durable decision lifecycle records it: an effect body carries the decision's reason, rule, digest, correlation and its source, principal references, evaluation recipe and store position. A reader validates against evidence-entry, which also admits the historical shape (article 13).",
+  "properties": {
+    "body": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/effect-body"
+        },
+        {
+          "$ref": "#/$defs/grade-body"
+        },
+        {
+          "$ref": "#/$defs/gap-body"
+        },
+        {
+          "$ref": "#/$defs/composition-body"
+        },
+        {
+          "$ref": "#/$defs/recovery-body"
+        }
+      ]
+    },
+    "connection_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "entry_hash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "kind": {
+      "enum": [
+        "effect",
+        "grade",
+        "gap",
+        "composition",
+        "recovery"
+      ],
+      "type": "string"
+    },
+    "preimage_version": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "previous_hash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "principal": {
+      "$ref": "#/$defs/principal"
+    },
+    "recorded_at": {
+      "format": "date-time",
+      "type": "string"
+    },
+    "scope": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+      "type": "string"
+    },
+    "sequence": {
+      "minimum": 1,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "scope",
+    "kind",
+    "recorded_at",
+    "connection_id",
+    "principal",
+    "body",
+    "sequence",
+    "previous_hash",
+    "entry_hash",
+    "preimage_version"
+  ],
+  "title": "Evidence entry (new writer)",
+  "type": "object",
+  "x-contract-generation": 1,
+  "x-spdx-license-identifier": "Apache-2.0"
+}

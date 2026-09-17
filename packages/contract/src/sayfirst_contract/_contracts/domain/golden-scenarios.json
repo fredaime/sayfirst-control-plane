@@ -1,0 +1,359 @@
+{
+  "scenarios": {
+    "allow": {
+      "article": "1",
+      "ask": {
+        "capability": "example.effect",
+        "scope": "local"
+      },
+      "binds": "both",
+      "expect": {
+        "grant": "present",
+        "outcome": "allow",
+        "reason": "policy_allows"
+      },
+      "given": {
+        "policy": {
+          "example.effect": "auto"
+        }
+      }
+    },
+    "deny": {
+      "article": "1",
+      "ask": {
+        "capability": "example.effect",
+        "scope": "local"
+      },
+      "binds": "both",
+      "expect": {
+        "outcome": "deny",
+        "reason": "policy_denies"
+      },
+      "given": {
+        "policy": {
+          "example.effect": "deny"
+        }
+      }
+    },
+    "grant_expired_by_lifetime": {
+      "article": "10",
+      "ask": {
+        "arguments_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+        "capability": "example.effect",
+        "scope": "local"
+      },
+      "binds": "client",
+      "expect": {
+        "grant": "present",
+        "grant_use": "expired",
+        "outcome": "allow",
+        "reason": "policy_allows"
+      },
+      "given": {
+        "grant_lifetime_seconds": 30,
+        "policy": {
+          "example.effect": "auto"
+        }
+      }
+    },
+    "grant_hit_within_lifetime": {
+      "article": "10",
+      "ask": {
+        "arguments_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+        "capability": "example.effect",
+        "scope": "local"
+      },
+      "binds": "client",
+      "expect": {
+        "grant": "present",
+        "grant_use": "hit",
+        "outcome": "allow",
+        "reason": "policy_allows"
+      },
+      "given": {
+        "policy": {
+          "example.effect": "auto"
+        }
+      }
+    },
+    "grant_miss_after_policy_version_change": {
+      "article": "10",
+      "ask": {
+        "arguments_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+        "capability": "example.effect",
+        "scope": "local"
+      },
+      "binds": "both",
+      "expect": {
+        "after_policy_change": {
+          "grant": "absent",
+          "outcome": "deny",
+          "reason": "policy_denies"
+        },
+        "grant": "present",
+        "outcome": "allow",
+        "reason": "policy_allows"
+      },
+      "given": {
+        "policy": {
+          "example.effect": "auto"
+        },
+        "policy_changes_to": {
+          "example.effect": "deny"
+        }
+      }
+    },
+    "grant_void_on_arguments_change": {
+      "article": "3",
+      "ask": {
+        "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "capability": "example.effect",
+        "scope": "local"
+      },
+      "binds": "client",
+      "expect": {
+        "grant": "present",
+        "grant_use": "arguments_changed",
+        "outcome": "allow",
+        "reason": "policy_allows"
+      },
+      "given": {
+        "grant_arguments_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+        "policy": {
+          "example.effect": "auto"
+        }
+      }
+    },
+    "grant_void_on_connection_loss": {
+      "article": "10",
+      "ask": {
+        "arguments_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+        "capability": "example.effect",
+        "scope": "local"
+      },
+      "binds": "client",
+      "expect": {
+        "grant": "present",
+        "grant_use": "connection_lost",
+        "outcome": "allow",
+        "reason": "policy_allows"
+      },
+      "given": {
+        "connection_live": false,
+        "policy": {
+          "example.effect": "auto"
+        }
+      }
+    },
+    "missing_policy": {
+      "article": "1",
+      "ask": {
+        "capability": "example.effect",
+        "scope": "local"
+      },
+      "binds": "both",
+      "expect": {
+        "outcome": "deny",
+        "reason": "policy_absent"
+      },
+      "given": {
+        "policy": {}
+      }
+    },
+    "no_grant_on_deny": {
+      "article": "10",
+      "ask": {
+        "arguments_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+        "capability": "example.effect",
+        "scope": "local"
+      },
+      "binds": "both",
+      "expect": {
+        "grant": "absent",
+        "outcome": "deny",
+        "reason": "policy_denies"
+      },
+      "given": {
+        "policy": {
+          "example.effect": "deny"
+        }
+      }
+    },
+    "no_grant_without_signal_channel": {
+      "article": "10",
+      "ask": {
+        "arguments_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+        "capability": "example.effect",
+        "scope": "local"
+      },
+      "binds": "both",
+      "expect": {
+        "grant": "absent",
+        "outcome": "allow",
+        "reason": "policy_allows"
+      },
+      "given": {
+        "policy": {
+          "example.effect": "auto"
+        },
+        "signal_channel": false
+      }
+    },
+    "policy_unavailable_is_could_not_ask": {
+      "article": "1",
+      "ask": {
+        "arguments_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+        "capability": "example.effect",
+        "scope": "local"
+      },
+      "binds": "both",
+      "expect": {
+        "grant": "absent",
+        "problem": "policy_unavailable",
+        "result": "could_not_ask"
+      },
+      "given": {
+        "policy_unavailable": true
+      }
+    },
+    "review_approve": {
+      "article": "12",
+      "ask": {
+        "capability": "example.effect",
+        "scope": "local"
+      },
+      "binds": "both",
+      "expect": {
+        "outcome": "suspend",
+        "reason": "policy_requires_review"
+      },
+      "given": {
+        "policy": {
+          "example.effect": "review"
+        }
+      },
+      "then": {
+        "expect": {
+          "after_resolution": {
+            "outcome": "allow",
+            "reason": "approval_granted"
+          },
+          "state": "approved"
+        },
+        "resolve": "approve"
+      }
+    },
+    "review_expire": {
+      "article": "12",
+      "ask": {
+        "capability": "example.effect",
+        "scope": "local"
+      },
+      "binds": "both",
+      "expect": {
+        "outcome": "suspend",
+        "reason": "policy_requires_review"
+      },
+      "given": {
+        "policy": {
+          "example.effect": "review"
+        }
+      },
+      "then": {
+        "expect": {
+          "state": "expired"
+        },
+        "resolve": "expire"
+      }
+    },
+    "review_reject": {
+      "article": "12",
+      "ask": {
+        "capability": "example.effect",
+        "scope": "local"
+      },
+      "binds": "both",
+      "expect": {
+        "outcome": "suspend",
+        "reason": "policy_requires_review"
+      },
+      "given": {
+        "policy": {
+          "example.effect": "review"
+        }
+      },
+      "then": {
+        "expect": {
+          "after_resolution": {
+            "outcome": "deny",
+            "reason": "approval_rejected"
+          },
+          "state": "rejected"
+        },
+        "resolve": "reject"
+      }
+    },
+    "strictest_rule_wins": {
+      "article": "1",
+      "ask": {
+        "arguments_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+        "capability": "example.effect",
+        "scope": "local"
+      },
+      "binds": "server",
+      "expect": {
+        "grant": "absent",
+        "outcome": "deny",
+        "reason": "policy_denies"
+      },
+      "given": {
+        "applying_outcomes": [
+          "allow",
+          "suspend",
+          "deny"
+        ],
+        "policy": {
+          "example.effect": "deny"
+        }
+      }
+    },
+    "unknown_outcome": {
+      "article": "13",
+      "ask": {
+        "capability": "example.effect",
+        "scope": "local"
+      },
+      "binds": "client",
+      "expect": {
+        "problem": "outcome_unknown",
+        "reported_outcome": "unknown",
+        "result": "could_not_ask"
+      },
+      "given": {
+        "server": {
+          "answers": {
+            "outcome": "zz-synthetic-outcome-4e1f",
+            "reason": "policy_allows"
+          }
+        }
+      }
+    },
+    "unreachable": {
+      "article": "1",
+      "ask": {
+        "capability": "example.effect",
+        "scope": "local"
+      },
+      "binds": "client",
+      "expect": {
+        "problem": "unreachable",
+        "result": "could_not_ask"
+      },
+      "given": {
+        "server": "unreachable"
+      }
+    }
+  },
+  "x-contract-generation": 1,
+  "x-spdx-license-identifier": "Apache-2.0 OR MIT-0"
+}

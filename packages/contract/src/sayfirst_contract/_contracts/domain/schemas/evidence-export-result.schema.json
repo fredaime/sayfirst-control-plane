@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "description": "A deterministic bounded raw evidence bundle.",
+  "properties": {
+    "contract_version": {
+      "const": "1",
+      "type": "string"
+    },
+    "entries": {
+      "items": {
+        "$ref": "evidence-entry.schema.json"
+      },
+      "maxItems": 10000,
+      "type": "array"
+    },
+    "entry_count": {
+      "maximum": 10000,
+      "minimum": 0,
+      "type": "integer"
+    },
+    "from_sequence": {
+      "minimum": 1,
+      "type": "integer"
+    },
+    "manifest_hash": {
+      "pattern": "^[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "manifest_version": {
+      "description": "Which manifest recipe the digest was taken under. A bundle without it predates v3 and is tried against v1 and v2.",
+      "minLength": 1,
+      "type": "string"
+    },
+    "next_from": {
+      "minimum": 1,
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "policy_versions": {
+      "additionalProperties": {
+        "oneOf": [
+          {
+            "additionalProperties": false,
+            "properties": {
+              "content": {
+                "contentEncoding": "base64",
+                "description": "The exact archived bytes, base64 without newlines; the whole administrator policy file, which discloses every rule and reason it holds to every reader admitted to export (A6).",
+                "type": "string"
+              },
+              "state": {
+                "const": "present"
+              }
+            },
+            "required": [
+              "state",
+              "content"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "state": {
+                "const": "absent"
+              }
+            },
+            "required": [
+              "state"
+            ],
+            "type": "object"
+          },
+          {
+            "additionalProperties": false,
+            "properties": {
+              "state": {
+                "const": "damaged"
+              }
+            },
+            "required": [
+              "state"
+            ],
+            "type": "object"
+          }
+        ]
+      },
+      "description": "One key for every distinct policy version an included effect names, with the bytes or the reason there are none. A missing key is a verification failure, never a successful empty map.",
+      "propertyNames": {
+        "pattern": "^sha256:[0-9a-f]{64}$"
+      },
+      "type": "object"
+    },
+    "recovery_context": {
+      "description": "Exact entries after the included range, contiguous from its last hash, carried so a verifier can see the closure of the epochs the range represents; supporting context, never additional decision coverage.",
+      "items": {
+        "$ref": "evidence-entry.schema.json"
+      },
+      "type": "array"
+    },
+    "scope": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+      "type": "string"
+    },
+    "to_sequence": {
+      "minimum": 1,
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "verification": {
+      "$ref": "evidence-verdict.schema.json"
+    }
+  },
+  "required": [
+    "contract_version",
+    "scope",
+    "from_sequence",
+    "to_sequence",
+    "entry_count",
+    "entries",
+    "verification",
+    "manifest_hash",
+    "next_from"
+  ],
+  "title": "Evidence export result",
+  "type": "object",
+  "x-contract-generation": 1,
+  "x-spdx-license-identifier": "Apache-2.0"
+}

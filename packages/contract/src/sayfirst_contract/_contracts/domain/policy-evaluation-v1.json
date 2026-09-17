@@ -1,0 +1,979 @@
+{
+  "description": "The one arbiter between the live evaluator and the retrospective one: both implementations run every vector independently (article 13). Finite vectors pin examples; the recipe text in recipes/policy-evaluation-v1.md defines the remaining inputs.",
+  "recipe": "sayfirst/policy-evaluation/v1",
+  "rederivations": [
+    {
+      "expected": {
+        "cause": null,
+        "expected": null,
+        "verdict": "confirmed"
+      },
+      "name": "a_recorded_triple_the_policy_reproduces_is_confirmed",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\n[[rule]]\nid = \"r-user\"\ncapability = \"mail.send\"\nprincipals = [\"user:build\"]\noutcome = \"allow\"\nreason = \"reason for r-user\"\n",
+      "recorded": {
+        "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "capability": "mail.send",
+        "evaluation_recipe": "sayfirst/policy-evaluation/v1",
+        "outcome": "allow",
+        "principal_references": [
+          "group:ci",
+          "user:build"
+        ],
+        "reason": "policy_allows",
+        "rule_id": "r-user",
+        "scope": "local"
+      }
+    },
+    {
+      "expected": {
+        "cause": null,
+        "expected": [
+          "deny",
+          "policy_denies",
+          "r-user"
+        ],
+        "verdict": "differs"
+      },
+      "name": "a_recorded_outcome_the_policy_contradicts_differs",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\n[[rule]]\nid = \"r-user\"\ncapability = \"mail.send\"\nprincipals = [\"user:build\"]\noutcome = \"deny\"\nreason = \"reason for r-user\"\n",
+      "recorded": {
+        "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "capability": "mail.send",
+        "evaluation_recipe": "sayfirst/policy-evaluation/v1",
+        "outcome": "allow",
+        "principal_references": [
+          "group:ci",
+          "user:build"
+        ],
+        "reason": "policy_allows",
+        "rule_id": "r-user",
+        "scope": "local"
+      }
+    },
+    {
+      "expected": {
+        "cause": null,
+        "expected": [
+          "allow",
+          "policy_allows",
+          "r-a"
+        ],
+        "verdict": "differs"
+      },
+      "name": "a_recorded_rule_the_policy_did_not_select_differs",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\n[[rule]]\nid = \"r-a\"\ncapability = \"mail.send\"\nprincipals = [\"user:build\"]\noutcome = \"allow\"\nreason = \"reason for r-a\"\n[[rule]]\nid = \"r-b\"\ncapability = \"mail.send\"\nprincipals = [\"user:build\"]\noutcome = \"allow\"\nreason = \"reason for r-b\"\n",
+      "recorded": {
+        "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "capability": "mail.send",
+        "evaluation_recipe": "sayfirst/policy-evaluation/v1",
+        "outcome": "allow",
+        "principal_references": [
+          "group:ci",
+          "user:build"
+        ],
+        "reason": "policy_allows",
+        "rule_id": "r-b",
+        "scope": "local"
+      }
+    },
+    {
+      "expected": {
+        "cause": "reason_outside_recipe",
+        "expected": null,
+        "verdict": "unverifiable"
+      },
+      "name": "a_recorded_capability_unknown_is_outside_the_recipe_never_differs",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\n",
+      "recorded": {
+        "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "capability": "mail.send",
+        "evaluation_recipe": "sayfirst/policy-evaluation/v1",
+        "outcome": "deny",
+        "principal_references": [
+          "group:ci",
+          "user:build"
+        ],
+        "reason": "capability_unknown",
+        "rule_id": null,
+        "scope": "local"
+      }
+    },
+    {
+      "expected": {
+        "cause": "evaluation_recipe_unsupported",
+        "expected": null,
+        "verdict": "unverifiable"
+      },
+      "name": "an_unknown_recipe_is_unsupported_never_evaluated",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\n[[rule]]\nid = \"r-user\"\ncapability = \"mail.send\"\nprincipals = [\"user:build\"]\noutcome = \"allow\"\nreason = \"reason for r-user\"\n",
+      "recorded": {
+        "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "capability": "mail.send",
+        "evaluation_recipe": "sayfirst/policy-evaluation/v9",
+        "outcome": "allow",
+        "principal_references": [
+          "group:ci",
+          "user:build"
+        ],
+        "reason": "policy_allows",
+        "rule_id": "r-user",
+        "scope": "local"
+      }
+    },
+    {
+      "expected": {
+        "cause": "members_absent",
+        "expected": null,
+        "verdict": "unverifiable"
+      },
+      "name": "an_absent_recipe_is_members_absent",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\n[[rule]]\nid = \"r-user\"\ncapability = \"mail.send\"\nprincipals = [\"user:build\"]\noutcome = \"allow\"\nreason = \"reason for r-user\"\n",
+      "recorded": {
+        "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "capability": "mail.send",
+        "evaluation_recipe": null,
+        "outcome": "allow",
+        "principal_references": [
+          "group:ci",
+          "user:build"
+        ],
+        "reason": "policy_allows",
+        "rule_id": "r-user",
+        "scope": "local"
+      }
+    },
+    {
+      "expected": {
+        "cause": "policy_unparseable",
+        "expected": null,
+        "verdict": "unverifiable"
+      },
+      "name": "an_unparseable_policy_is_unverifiable",
+      "policy": "format = 1\n[revision\n",
+      "recorded": {
+        "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "capability": "mail.send",
+        "evaluation_recipe": "sayfirst/policy-evaluation/v1",
+        "outcome": "deny",
+        "principal_references": [
+          "group:ci",
+          "user:build"
+        ],
+        "reason": "policy_absent",
+        "rule_id": null,
+        "scope": "local"
+      }
+    },
+    {
+      "expected": {
+        "cause": "members_absent",
+        "expected": null,
+        "verdict": "unverifiable"
+      },
+      "name": "absent_references_are_members_absent",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\n[[rule]]\nid = \"r-user\"\ncapability = \"mail.send\"\nprincipals = [\"user:build\"]\noutcome = \"allow\"\nreason = \"reason for r-user\"\n",
+      "recorded": {
+        "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "capability": "mail.send",
+        "evaluation_recipe": "sayfirst/policy-evaluation/v1",
+        "outcome": "allow",
+        "principal_references": null,
+        "reason": "policy_allows",
+        "rule_id": "r-user",
+        "scope": "local"
+      }
+    },
+    {
+      "expected": {
+        "cause": null,
+        "expected": null,
+        "verdict": "confirmed"
+      },
+      "name": "a_policy_carrying_a_review_deadline_re_derives_as_it_did_without_it",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\n[[rule]]\nid = \"r-user\"\ncapability = \"mail.send\"\nprincipals = [\"user:build\"]\noutcome = \"allow\"\nreason = \"reason for r-user\"\n[[rule]]\nid = \"r-review\"\ncapability = \"example.waits\"\nprincipals = [\"user:build\"]\noutcome = \"suspend\"\nreason = \"reason for r-review\"\nreview_deadline_seconds = 60\n",
+      "recorded": {
+        "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "capability": "mail.send",
+        "evaluation_recipe": "sayfirst/policy-evaluation/v1",
+        "outcome": "allow",
+        "principal_references": [
+          "group:ci",
+          "user:build"
+        ],
+        "reason": "policy_allows",
+        "rule_id": "r-user",
+        "scope": "local"
+      }
+    }
+  ],
+  "vectors": [
+    {
+      "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "capability": "mail.send",
+      "expected": {
+        "outcome": "deny",
+        "reason": "policy_absent",
+        "rule_id": null
+      },
+      "name": "no_rule_applies_denies_as_policy_absent",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\n",
+      "principal_references": [
+        "group:ci",
+        "user:build"
+      ],
+      "scope": "local"
+    },
+    {
+      "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "capability": "mail.send",
+      "expected": {
+        "outcome": "deny",
+        "reason": "policy_absent",
+        "rule_id": null
+      },
+      "name": "empty_policy_is_a_valid_policy_with_no_rule",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\n",
+      "principal_references": [],
+      "scope": "local"
+    },
+    {
+      "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "capability": "mail.send",
+      "expected": {
+        "outcome": "allow",
+        "reason": "policy_allows",
+        "rule_id": "r-user"
+      },
+      "name": "a_user_reference_matches",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\n[[rule]]\nid = \"r-user\"\ncapability = \"mail.send\"\nprincipals = [\"user:build\"]\noutcome = \"allow\"\nreason = \"reason for r-user\"\n",
+      "principal_references": [
+        "group:ci",
+        "user:build"
+      ],
+      "scope": "local"
+    },
+    {
+      "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "capability": "mail.send",
+      "expected": {
+        "outcome": "allow",
+        "reason": "policy_allows",
+        "rule_id": "r-group"
+      },
+      "name": "a_group_reference_matches",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\n[[rule]]\nid = \"r-group\"\ncapability = \"mail.send\"\nprincipals = [\"group:ci\"]\noutcome = \"allow\"\nreason = \"reason for r-group\"\n",
+      "principal_references": [
+        "group:ci",
+        "user:build"
+      ],
+      "scope": "local"
+    },
+    {
+      "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "capability": "mail.send",
+      "expected": {
+        "outcome": "deny",
+        "reason": "policy_absent",
+        "rule_id": null
+      },
+      "name": "a_reference_the_record_does_not_carry_does_not_match",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\n[[rule]]\nid = \"r-other\"\ncapability = \"mail.send\"\nprincipals = [\"group:ops\"]\noutcome = \"allow\"\nreason = \"reason for r-other\"\n",
+      "principal_references": [
+        "group:ci",
+        "user:build"
+      ],
+      "scope": "local"
+    },
+    {
+      "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "capability": "mail.send",
+      "expected": {
+        "outcome": "deny",
+        "reason": "policy_denies",
+        "rule_id": "r-deny"
+      },
+      "name": "deny_wins_over_allow_whatever_the_file_order",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\n[[rule]]\nid = \"r-allow\"\ncapability = \"mail.send\"\nprincipals = [\"user:build\"]\noutcome = \"allow\"\nreason = \"reason for r-allow\"\n[[rule]]\nid = \"r-deny\"\ncapability = \"mail.send\"\nprincipals = [\"user:build\"]\noutcome = \"deny\"\nreason = \"reason for r-deny\"\n",
+      "principal_references": [
+        "group:ci",
+        "user:build"
+      ],
+      "scope": "local"
+    },
+    {
+      "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "capability": "mail.send",
+      "expected": {
+        "outcome": "suspend",
+        "reason": "policy_requires_review",
+        "rule_id": "r-review"
+      },
+      "name": "suspend_wins_over_allow",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\n[[rule]]\nid = \"r-allow\"\ncapability = \"mail.send\"\nprincipals = [\"user:build\"]\noutcome = \"allow\"\nreason = \"reason for r-allow\"\n[[rule]]\nid = \"r-review\"\ncapability = \"mail.send\"\nprincipals = [\"user:build\"]\noutcome = \"suspend\"\nreason = \"reason for r-review\"\n",
+      "principal_references": [
+        "group:ci",
+        "user:build"
+      ],
+      "scope": "local"
+    },
+    {
+      "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "capability": "mail.send",
+      "expected": {
+        "outcome": "deny",
+        "reason": "policy_denies",
+        "rule_id": "r-deny"
+      },
+      "name": "deny_wins_over_suspend",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\n[[rule]]\nid = \"r-review\"\ncapability = \"mail.send\"\nprincipals = [\"user:build\"]\noutcome = \"suspend\"\nreason = \"reason for r-review\"\n[[rule]]\nid = \"r-deny\"\ncapability = \"mail.send\"\nprincipals = [\"user:build\"]\noutcome = \"deny\"\nreason = \"reason for r-deny\"\n",
+      "principal_references": [
+        "group:ci",
+        "user:build"
+      ],
+      "scope": "local"
+    },
+    {
+      "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "capability": "mail.send",
+      "expected": {
+        "outcome": "allow",
+        "reason": "policy_allows",
+        "rule_id": "r-second"
+      },
+      "name": "a_tie_is_broken_by_file_order",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\n[[rule]]\nid = \"r-second\"\ncapability = \"mail.send\"\nprincipals = [\"user:build\"]\noutcome = \"allow\"\nreason = \"reason for r-second\"\n[[rule]]\nid = \"r-first\"\ncapability = \"mail.send\"\nprincipals = [\"user:build\"]\noutcome = \"allow\"\nreason = \"reason for r-first\"\n",
+      "principal_references": [
+        "group:ci",
+        "user:build"
+      ],
+      "scope": "local"
+    },
+    {
+      "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "capability": "mail.send",
+      "expected": {
+        "outcome": "allow",
+        "reason": "policy_allows",
+        "rule_id": "r-pin"
+      },
+      "name": "a_pinned_digest_that_matches_applies",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\n[[rule]]\nid = \"r-pin\"\ncapability = \"mail.send\"\nprincipals = [\"user:build\"]\noutcome = \"allow\"\nreason = \"reason for r-pin\"\narguments_digest = \"sha256:1111111111111111111111111111111111111111111111111111111111111111\"\n",
+      "principal_references": [
+        "group:ci",
+        "user:build"
+      ],
+      "scope": "local"
+    },
+    {
+      "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "capability": "mail.send",
+      "expected": {
+        "outcome": "deny",
+        "reason": "policy_absent",
+        "rule_id": null
+      },
+      "name": "a_pinned_digest_that_differs_does_not_apply",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\n[[rule]]\nid = \"r-pin\"\ncapability = \"mail.send\"\nprincipals = [\"user:build\"]\noutcome = \"allow\"\nreason = \"reason for r-pin\"\narguments_digest = \"sha256:2222222222222222222222222222222222222222222222222222222222222222\"\n",
+      "principal_references": [
+        "group:ci",
+        "user:build"
+      ],
+      "scope": "local"
+    },
+    {
+      "arguments_digest": null,
+      "capability": "mail.send",
+      "expected": {
+        "outcome": "deny",
+        "reason": "policy_absent",
+        "rule_id": null
+      },
+      "name": "a_null_recorded_digest_never_satisfies_a_pin",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\n[[rule]]\nid = \"r-pin\"\ncapability = \"mail.send\"\nprincipals = [\"user:build\"]\noutcome = \"allow\"\nreason = \"reason for r-pin\"\narguments_digest = \"sha256:1111111111111111111111111111111111111111111111111111111111111111\"\n",
+      "principal_references": [
+        "group:ci",
+        "user:build"
+      ],
+      "scope": "local"
+    },
+    {
+      "arguments_digest": null,
+      "capability": "mail.send",
+      "expected": {
+        "outcome": "allow",
+        "reason": "policy_allows",
+        "rule_id": "r-open"
+      },
+      "name": "an_unpinned_rule_applies_to_a_null_digest",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\n[[rule]]\nid = \"r-open\"\ncapability = \"mail.send\"\nprincipals = [\"user:build\"]\noutcome = \"allow\"\nreason = \"reason for r-open\"\n",
+      "principal_references": [
+        "group:ci",
+        "user:build"
+      ],
+      "scope": "local"
+    },
+    {
+      "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "capability": "mail.send",
+      "expected": {
+        "outcome": "deny",
+        "reason": "policy_absent",
+        "rule_id": null
+      },
+      "name": "a_rule_for_another_scope_does_not_apply",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\n[[rule]]\nid = \"r-audit\"\ncapability = \"mail.send\"\nscope = \"audit\"\nprincipals = [\"user:build\"]\noutcome = \"allow\"\nreason = \"reason for r-audit\"\n",
+      "principal_references": [
+        "group:ci",
+        "user:build"
+      ],
+      "scope": "local"
+    },
+    {
+      "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "capability": "mail.send",
+      "expected": {
+        "outcome": "allow",
+        "reason": "policy_allows",
+        "rule_id": "r-audit"
+      },
+      "name": "a_rule_for_this_scope_applies_when_named",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\n[[rule]]\nid = \"r-audit\"\ncapability = \"mail.send\"\nscope = \"audit\"\nprincipals = [\"user:build\"]\noutcome = \"allow\"\nreason = \"reason for r-audit\"\n",
+      "principal_references": [
+        "group:ci",
+        "user:build"
+      ],
+      "scope": "audit"
+    },
+    {
+      "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "capability": "mail.send",
+      "expected": {
+        "outcome": "deny",
+        "reason": "policy_absent",
+        "rule_id": null
+      },
+      "name": "a_rule_for_another_capability_does_not_apply",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\n[[rule]]\nid = \"r-file\"\ncapability = \"file.write\"\nprincipals = [\"user:build\"]\noutcome = \"allow\"\nreason = \"reason for r-file\"\n",
+      "principal_references": [
+        "group:ci",
+        "user:build"
+      ],
+      "scope": "local"
+    },
+    {
+      "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "capability": "mail.send",
+      "expected": {
+        "outcome": "deny",
+        "reason": "policy_denies",
+        "rule_id": "r-local"
+      },
+      "name": "scope_defaults_to_local",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\n[[rule]]\nid = \"r-local\"\ncapability = \"mail.send\"\nprincipals = [\"user:build\"]\noutcome = \"deny\"\nreason = \"reason for r-local\"\n",
+      "principal_references": [
+        "group:ci",
+        "user:build"
+      ],
+      "scope": "local"
+    },
+    {
+      "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "capability": "mail.send",
+      "expected": {
+        "outcome": "allow",
+        "reason": "policy_allows",
+        "rule_id": "r-space"
+      },
+      "name": "a_name_with_ordinary_whitespace_matches_exactly",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\n[[rule]]\nid = \"r-space\"\ncapability = \"mail.send\"\nprincipals = [\"user:build agent\"]\noutcome = \"allow\"\nreason = \"reason for r-space\"\n",
+      "principal_references": [
+        "user:build agent"
+      ],
+      "scope": "local"
+    },
+    {
+      "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "capability": "mail.send",
+      "expected": {
+        "outcome": "allow",
+        "reason": "policy_allows",
+        "rule_id": "r-long"
+      },
+      "name": "a_name_of_256_characters_is_accepted",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\n[[rule]]\nid = \"r-long\"\ncapability = \"mail.send\"\nprincipals = [\"group:nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn\"]\noutcome = \"allow\"\nreason = \"reason for r-long\"\n",
+      "principal_references": [
+        "group:nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn"
+      ],
+      "scope": "local"
+    },
+    {
+      "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "capability": "mail.send",
+      "expected": {
+        "unparseable": true
+      },
+      "name": "a_name_of_257_characters_is_unparseable",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\n[[rule]]\nid = \"r-long\"\ncapability = \"mail.send\"\nprincipals = [\"group:nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn\"]\noutcome = \"allow\"\nreason = \"reason for r-long\"\n",
+      "principal_references": [
+        "group:ci",
+        "user:build"
+      ],
+      "scope": "local"
+    },
+    {
+      "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "capability": "mail.send",
+      "expected": {
+        "outcome": "deny",
+        "reason": "policy_absent",
+        "rule_id": null
+      },
+      "name": "no_case_folding_is_applied",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\n[[rule]]\nid = \"r-case\"\ncapability = \"mail.send\"\nprincipals = [\"user:Build\"]\noutcome = \"allow\"\nreason = \"reason for r-case\"\n",
+      "principal_references": [
+        "group:ci",
+        "user:build"
+      ],
+      "scope": "local"
+    },
+    {
+      "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "capability": "mail.send",
+      "expected": {
+        "outcome": "deny",
+        "reason": "policy_absent",
+        "rule_id": null
+      },
+      "name": "no_wildcard_is_recognised",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\n[[rule]]\nid = \"r-star\"\ncapability = \"mail.send\"\nprincipals = [\"user:*\"]\noutcome = \"allow\"\nreason = \"reason for r-star\"\n",
+      "principal_references": [
+        "group:ci",
+        "user:build"
+      ],
+      "scope": "local"
+    },
+    {
+      "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "capability": "mail.send",
+      "expected": {
+        "unparseable": true
+      },
+      "name": "malformed_toml_is_unparseable",
+      "policy": "format = 1\n[revision\nreason = \"x\"\n",
+      "principal_references": [
+        "group:ci",
+        "user:build"
+      ],
+      "scope": "local"
+    },
+    {
+      "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "capability": "mail.send",
+      "expected": {
+        "unparseable": true
+      },
+      "name": "a_duplicate_key_is_unparseable",
+      "policy": "format = 1\nformat = 1\n[revision]\nreason = \"x\"\n",
+      "principal_references": [
+        "group:ci",
+        "user:build"
+      ],
+      "scope": "local"
+    },
+    {
+      "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "capability": "mail.send",
+      "expected": {
+        "unparseable": true
+      },
+      "name": "an_unknown_root_member_is_unparseable",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\nowner = \"x\"\n",
+      "principal_references": [
+        "group:ci",
+        "user:build"
+      ],
+      "scope": "local"
+    },
+    {
+      "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "capability": "mail.send",
+      "expected": {
+        "unparseable": true
+      },
+      "name": "an_unknown_rule_member_is_unparseable",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\n[[rule]]\nid = \"r-x\"\ncapability = \"mail.send\"\nprincipals = [\"user:build\"]\noutcome = \"allow\"\nreason = \"reason for r-x\"\nnote = \"x\"\n",
+      "principal_references": [
+        "group:ci",
+        "user:build"
+      ],
+      "scope": "local"
+    },
+    {
+      "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "capability": "mail.send",
+      "expected": {
+        "unparseable": true
+      },
+      "name": "a_duplicate_rule_id_is_unparseable",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\n[[rule]]\nid = \"r-x\"\ncapability = \"mail.send\"\nprincipals = [\"user:build\"]\noutcome = \"allow\"\nreason = \"reason for r-x\"\n[[rule]]\nid = \"r-x\"\ncapability = \"mail.send\"\nprincipals = [\"user:build\"]\noutcome = \"deny\"\nreason = \"reason for r-x\"\n",
+      "principal_references": [
+        "group:ci",
+        "user:build"
+      ],
+      "scope": "local"
+    },
+    {
+      "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "capability": "mail.send",
+      "expected": {
+        "unparseable": true
+      },
+      "name": "a_boolean_format_is_unparseable",
+      "policy": "format = true\n[revision]\nreason = \"reviewed change\"\n",
+      "principal_references": [
+        "group:ci",
+        "user:build"
+      ],
+      "scope": "local"
+    },
+    {
+      "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "capability": "mail.send",
+      "expected": {
+        "unparseable": true
+      },
+      "name": "a_format_other_than_one_is_unparseable",
+      "policy": "format = 2\n[revision]\nreason = \"reviewed change\"\n",
+      "principal_references": [
+        "group:ci",
+        "user:build"
+      ],
+      "scope": "local"
+    },
+    {
+      "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "capability": "mail.send",
+      "expected": {
+        "unparseable": true
+      },
+      "name": "a_missing_revision_is_unparseable",
+      "policy": "format = 1\n",
+      "principal_references": [
+        "group:ci",
+        "user:build"
+      ],
+      "scope": "local"
+    },
+    {
+      "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "capability": "mail.send",
+      "expected": {
+        "unparseable": true
+      },
+      "name": "an_empty_revision_reason_is_unparseable",
+      "policy": "format = 1\n[revision]\nreason = \"\"\n",
+      "principal_references": [
+        "group:ci",
+        "user:build"
+      ],
+      "scope": "local"
+    },
+    {
+      "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "capability": "mail.send",
+      "expected": {
+        "unparseable": true
+      },
+      "name": "a_control_character_in_a_reason_is_unparseable",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\n[[rule]]\nid = \"r-x\"\ncapability = \"mail.send\"\nprincipals = [\"user:build\"]\noutcome = \"allow\"\nreason = \"line\\u0007bell\"\n",
+      "principal_references": [
+        "group:ci",
+        "user:build"
+      ],
+      "scope": "local"
+    },
+    {
+      "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "capability": "mail.send",
+      "expected": {
+        "unparseable": true
+      },
+      "name": "a_bad_rule_id_is_unparseable",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\n[[rule]]\nid = \"Rule-X\"\ncapability = \"mail.send\"\nprincipals = [\"user:build\"]\noutcome = \"allow\"\nreason = \"reason for Rule-X\"\n",
+      "principal_references": [
+        "group:ci",
+        "user:build"
+      ],
+      "scope": "local"
+    },
+    {
+      "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "capability": "mail.send",
+      "expected": {
+        "unparseable": true
+      },
+      "name": "a_bad_capability_is_unparseable",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\n[[rule]]\nid = \"r-x\"\ncapability = \"Mail.Send\"\nprincipals = [\"user:build\"]\noutcome = \"allow\"\nreason = \"reason for r-x\"\n",
+      "principal_references": [
+        "group:ci",
+        "user:build"
+      ],
+      "scope": "local"
+    },
+    {
+      "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "capability": "mail.send",
+      "expected": {
+        "unparseable": true
+      },
+      "name": "a_bad_scope_is_unparseable",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\n[[rule]]\nid = \"r-x\"\ncapability = \"mail.send\"\nscope = \"../x\"\nprincipals = [\"user:build\"]\noutcome = \"allow\"\nreason = \"reason for r-x\"\n",
+      "principal_references": [
+        "group:ci",
+        "user:build"
+      ],
+      "scope": "local"
+    },
+    {
+      "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "capability": "mail.send",
+      "expected": {
+        "unparseable": true
+      },
+      "name": "an_unknown_outcome_is_unparseable",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\n[[rule]]\nid = \"r-x\"\ncapability = \"mail.send\"\nprincipals = [\"user:build\"]\noutcome = \"permit\"\nreason = \"reason for r-x\"\n",
+      "principal_references": [
+        "group:ci",
+        "user:build"
+      ],
+      "scope": "local"
+    },
+    {
+      "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "capability": "mail.send",
+      "expected": {
+        "unparseable": true
+      },
+      "name": "an_empty_principal_list_is_unparseable",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\n[[rule]]\nid = \"r-x\"\ncapability = \"mail.send\"\nprincipals = []\noutcome = \"allow\"\nreason = \"reason for r-x\"\n",
+      "principal_references": [
+        "group:ci",
+        "user:build"
+      ],
+      "scope": "local"
+    },
+    {
+      "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "capability": "mail.send",
+      "expected": {
+        "unparseable": true
+      },
+      "name": "a_reference_of_unknown_kind_is_unparseable",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\n[[rule]]\nid = \"r-x\"\ncapability = \"mail.send\"\nprincipals = [\"role:admin\"]\noutcome = \"allow\"\nreason = \"reason for r-x\"\n",
+      "principal_references": [
+        "group:ci",
+        "user:build"
+      ],
+      "scope": "local"
+    },
+    {
+      "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "capability": "mail.send",
+      "expected": {
+        "unparseable": true
+      },
+      "name": "a_reference_with_two_colons_is_unparseable",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\n[[rule]]\nid = \"r-x\"\ncapability = \"mail.send\"\nprincipals = [\"user:a:b\"]\noutcome = \"allow\"\nreason = \"reason for r-x\"\n",
+      "principal_references": [
+        "group:ci",
+        "user:build"
+      ],
+      "scope": "local"
+    },
+    {
+      "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "capability": "mail.send",
+      "expected": {
+        "unparseable": true
+      },
+      "name": "a_malformed_digest_pin_is_unparseable",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\n[[rule]]\nid = \"r-x\"\ncapability = \"mail.send\"\nprincipals = [\"user:build\"]\noutcome = \"allow\"\nreason = \"reason for r-x\"\narguments_digest = \"sha256:short\"\n",
+      "principal_references": [
+        "group:ci",
+        "user:build"
+      ],
+      "scope": "local"
+    },
+    {
+      "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "capability": "mail.send",
+      "expected": {
+        "unparseable": true
+      },
+      "name": "a_boolean_lifetime_is_unparseable",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\n[[rule]]\nid = \"r-x\"\ncapability = \"mail.send\"\nprincipals = [\"user:build\"]\noutcome = \"allow\"\nreason = \"reason for r-x\"\ngrant_lifetime_seconds = true\n",
+      "principal_references": [
+        "group:ci",
+        "user:build"
+      ],
+      "scope": "local"
+    },
+    {
+      "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "capability": "mail.send",
+      "expected": {
+        "unparseable": true
+      },
+      "name": "a_zero_lifetime_is_unparseable",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\n[[rule]]\nid = \"r-x\"\ncapability = \"mail.send\"\nprincipals = [\"user:build\"]\noutcome = \"allow\"\nreason = \"reason for r-x\"\ngrant_lifetime_seconds = 0\n",
+      "principal_references": [
+        "group:ci",
+        "user:build"
+      ],
+      "scope": "local"
+    },
+    {
+      "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "capability": "mail.send",
+      "expected": {
+        "unparseable": true
+      },
+      "name": "a_lifetime_on_a_deny_rule_is_unparseable",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\n[[rule]]\nid = \"r-x\"\ncapability = \"mail.send\"\nprincipals = [\"user:build\"]\noutcome = \"deny\"\nreason = \"reason for r-x\"\ngrant_lifetime_seconds = 60\n",
+      "principal_references": [
+        "group:ci",
+        "user:build"
+      ],
+      "scope": "local"
+    },
+    {
+      "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "capability": "mail.send",
+      "expected": {
+        "outcome": "allow",
+        "reason": "policy_allows",
+        "rule_id": "r-long-grant"
+      },
+      "live_acceptance": {
+        "accepted": false,
+        "max_lifetime_seconds": 3600,
+        "note": "the deployment-configured upper bound affects live policy acceptance, not the outcome triple this recipe checks"
+      },
+      "name": "a_lifetime_above_a_deployment_cap_still_yields_the_triple",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\n[[rule]]\nid = \"r-long-grant\"\ncapability = \"mail.send\"\nprincipals = [\"user:build\"]\noutcome = \"allow\"\nreason = \"reason for r-long-grant\"\ngrant_lifetime_seconds = 7200\n",
+      "principal_references": [
+        "group:ci",
+        "user:build"
+      ],
+      "scope": "local"
+    },
+    {
+      "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "capability": "mail.send",
+      "expected": {
+        "outcome": "allow",
+        "reason": "policy_allows",
+        "rule_id": "r-grant"
+      },
+      "live_acceptance": {
+        "accepted": true,
+        "max_lifetime_seconds": 3600
+      },
+      "name": "a_lifetime_within_the_cap_is_accepted_live_too",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\n[[rule]]\nid = \"r-grant\"\ncapability = \"mail.send\"\nprincipals = [\"user:build\"]\noutcome = \"allow\"\nreason = \"reason for r-grant\"\ngrant_lifetime_seconds = 600\n",
+      "principal_references": [
+        "group:ci",
+        "user:build"
+      ],
+      "scope": "local"
+    },
+    {
+      "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "capability": "mail.send",
+      "expected": {
+        "outcome": "suspend",
+        "reason": "policy_requires_review",
+        "rule_id": "r-review"
+      },
+      "name": "a_review_deadline_is_carried_and_does_not_enter_the_triple",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\n[[rule]]\nid = \"r-allow\"\ncapability = \"mail.send\"\nprincipals = [\"user:build\"]\noutcome = \"allow\"\nreason = \"reason for r-allow\"\n[[rule]]\nid = \"r-review\"\ncapability = \"mail.send\"\nprincipals = [\"user:build\"]\noutcome = \"suspend\"\nreason = \"reason for r-review\"\nreview_deadline_seconds = 60\n",
+      "principal_references": [
+        "group:ci",
+        "user:build"
+      ],
+      "scope": "local"
+    },
+    {
+      "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "capability": "mail.send",
+      "expected": {
+        "unparseable": true
+      },
+      "name": "a_review_deadline_on_an_allow_rule_is_unparseable",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\n[[rule]]\nid = \"r-x\"\ncapability = \"mail.send\"\nprincipals = [\"user:build\"]\noutcome = \"allow\"\nreason = \"reason for r-x\"\nreview_deadline_seconds = 60\n",
+      "principal_references": [
+        "group:ci",
+        "user:build"
+      ],
+      "scope": "local"
+    },
+    {
+      "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "capability": "mail.send",
+      "expected": {
+        "unparseable": true
+      },
+      "name": "a_review_deadline_of_zero_is_unparseable",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\n[[rule]]\nid = \"r-review\"\ncapability = \"mail.send\"\nprincipals = [\"user:build\"]\noutcome = \"suspend\"\nreason = \"reason for r-review\"\nreview_deadline_seconds = 0\n",
+      "principal_references": [
+        "group:ci",
+        "user:build"
+      ],
+      "scope": "local"
+    },
+    {
+      "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "capability": "mail.send",
+      "expected": {
+        "unparseable": true
+      },
+      "name": "a_review_deadline_beyond_a_day_is_unparseable",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\n[[rule]]\nid = \"r-review\"\ncapability = \"mail.send\"\nprincipals = [\"user:build\"]\noutcome = \"suspend\"\nreason = \"reason for r-review\"\nreview_deadline_seconds = 86401\n",
+      "principal_references": [
+        "group:ci",
+        "user:build"
+      ],
+      "scope": "local"
+    },
+    {
+      "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "capability": "mail.send",
+      "expected": {
+        "unparseable": true
+      },
+      "name": "a_boolean_review_deadline_is_unparseable",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\n[[rule]]\nid = \"r-review\"\ncapability = \"mail.send\"\nprincipals = [\"user:build\"]\noutcome = \"suspend\"\nreason = \"reason for r-review\"\nreview_deadline_seconds = true\n",
+      "principal_references": [
+        "group:ci",
+        "user:build"
+      ],
+      "scope": "local"
+    },
+    {
+      "arguments_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "capability": "mail.send",
+      "expected": {
+        "unparseable": true
+      },
+      "name": "a_review_deadline_that_is_not_an_integer_is_unparseable",
+      "policy": "format = 1\n[revision]\nreason = \"reviewed change\"\n[[rule]]\nid = \"r-review\"\ncapability = \"mail.send\"\nprincipals = [\"user:build\"]\noutcome = \"suspend\"\nreason = \"reason for r-review\"\nreview_deadline_seconds = \"60\"\n",
+      "principal_references": [
+        "group:ci",
+        "user:build"
+      ],
+      "scope": "local"
+    }
+  ],
+  "x-contract-generation": 1,
+  "x-spdx-license-identifier": "Apache-2.0"
+}

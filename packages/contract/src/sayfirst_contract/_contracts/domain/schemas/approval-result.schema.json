@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "description": "The authoritative state of a one-person approval.",
+  "properties": {
+    "approval_ref": {
+      "maxLength": 128,
+      "minLength": 1,
+      "type": "string"
+    },
+    "authority": {
+      "const": "authoritative"
+    },
+    "capability": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[a-z][a-z0-9]*(\\.[a-z][a-z0-9]*)*$",
+      "type": "string"
+    },
+    "contract_generation": {
+      "minimum": 1,
+      "type": "integer"
+    },
+    "deadline": {
+      "format": "date-time",
+      "type": "string"
+    },
+    "decision_ref": {
+      "maxLength": 128,
+      "minLength": 1,
+      "type": "string"
+    },
+    "person": {
+      "description": "Who acted, on an approval a person resolved. Absent where nobody acted.",
+      "maxLength": 256,
+      "minLength": 1,
+      "type": "string"
+    },
+    "requested_at": {
+      "format": "date-time",
+      "type": "string"
+    },
+    "resolution_reason": {
+      "maxLength": 1024,
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "resolved_at": {
+      "format": "date-time",
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "scope": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+      "type": "string"
+    },
+    "state": {
+      "enum": [
+        "pending",
+        "approved",
+        "rejected",
+        "expired",
+        "unknown"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "contract_generation",
+    "authority",
+    "approval_ref",
+    "decision_ref",
+    "scope",
+    "capability",
+    "state",
+    "requested_at",
+    "deadline",
+    "resolved_at",
+    "resolution_reason"
+  ],
+  "title": "Approval result",
+  "type": "object",
+  "x-contract-generation": 1,
+  "x-spdx-license-identifier": "Apache-2.0"
+}

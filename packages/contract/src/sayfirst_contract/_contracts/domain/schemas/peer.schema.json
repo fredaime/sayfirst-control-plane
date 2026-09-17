@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "description": "What the kernel recorded for the process that opened the connection.",
+  "properties": {
+    "captured_at": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "gid": {
+      "minimum": 0,
+      "type": "integer"
+    },
+    "pid": {
+      "minimum": 1,
+      "type": [
+        "integer",
+        "null"
+      ],
+      "x-diagnostic": true
+    },
+    "uid": {
+      "minimum": 0,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "uid",
+    "gid",
+    "pid",
+    "captured_at"
+  ],
+  "title": "Peer",
+  "type": "object",
+  "x-contract-generation": 1,
+  "x-spdx-license-identifier": "Apache-2.0"
+}

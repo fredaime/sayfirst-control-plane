@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "description": "The current file authority and its rebuildable materialization.",
+  "properties": {
+    "authority": {
+      "const": "file"
+    },
+    "contract_generation": {
+      "minimum": 1,
+      "type": "integer"
+    },
+    "format": {
+      "const": 1,
+      "type": "integer"
+    },
+    "loaded_at": {
+      "format": "date-time",
+      "type": "string"
+    },
+    "policy_version": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "projection": {
+      "additionalProperties": true,
+      "properties": {
+        "in_step": {
+          "enum": [
+            "yes",
+            "no",
+            "unknown"
+          ],
+          "type": "string"
+        },
+        "kind": {
+          "maxLength": 64,
+          "minLength": 1,
+          "pattern": "^[a-z][a-z0-9_-]*$",
+          "type": "string",
+          "x-reserved-values": [
+            "memory",
+            "database",
+            "combined",
+            "unknown"
+          ]
+        },
+        "policy_version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "kind",
+        "policy_version",
+        "in_step"
+      ],
+      "type": "object"
+    },
+    "rule_count": {
+      "minimum": 0,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "contract_generation",
+    "authority",
+    "policy_version",
+    "format",
+    "loaded_at",
+    "rule_count",
+    "projection"
+  ],
+  "title": "Policy status",
+  "type": "object",
+  "x-contract-generation": 1,
+  "x-spdx-license-identifier": "Apache-2.0"
+}

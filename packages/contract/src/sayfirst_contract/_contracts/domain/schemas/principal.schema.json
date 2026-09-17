@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "description": "The identity a decision is evaluated against and evidence records.",
+  "properties": {
+    "established_at": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "established_by": {
+      "minLength": 1,
+      "type": "string",
+      "x-documented-values": [
+        "peer_credential"
+      ]
+    },
+    "gid": {
+      "minimum": 0,
+      "type": "integer"
+    },
+    "groups": {
+      "items": {
+        "type": "string"
+      },
+      "type": [
+        "array",
+        "null"
+      ]
+    },
+    "groups_status": {
+      "enum": [
+        "resolved",
+        "partial",
+        "unknown"
+      ],
+      "type": "string"
+    },
+    "kind": {
+      "maxLength": 64,
+      "minLength": 1,
+      "type": "string",
+      "x-documented-values": [
+        "user",
+        "service",
+        "workload",
+        "process"
+      ],
+      "x-max-bytes": 64
+    },
+    "name": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "reference": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "uid": {
+      "minimum": 0,
+      "type": "integer"
+    },
+    "unnamed_group_ids": {
+      "items": {
+        "minimum": 0,
+        "type": "integer"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "kind",
+    "uid",
+    "gid",
+    "name",
+    "groups",
+    "groups_status",
+    "unnamed_group_ids",
+    "established_by",
+    "established_at",
+    "reference"
+  ],
+  "title": "Principal",
+  "type": "object",
+  "x-contract-generation": 1,
+  "x-spdx-license-identifier": "Apache-2.0"
+}

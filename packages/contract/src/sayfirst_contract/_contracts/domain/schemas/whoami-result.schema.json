@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": true,
+  "description": "The principal, and the record it was built from, as the daemon saw them.",
+  "properties": {
+    "connection_id": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "contract_generation": {
+      "minimum": 1,
+      "type": "integer"
+    },
+    "delegation": {
+      "oneOf": [
+        {
+          "$ref": "delegation.schema.json"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "group_lifetime_seconds": {
+      "maximum": 3600,
+      "minimum": 1,
+      "type": "integer"
+    },
+    "mode": {
+      "enum": [
+        "per_user",
+        "system"
+      ],
+      "type": "string"
+    },
+    "peer": {
+      "$ref": "peer.schema.json"
+    },
+    "principal": {
+      "oneOf": [
+        {
+          "$ref": "principal.schema.json"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "refresh_due_at": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "socket_path": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "established",
+        "unknown",
+        "refused"
+      ],
+      "type": "string"
+    }
+  },
+  "required": [
+    "contract_generation",
+    "connection_id",
+    "socket_path",
+    "mode",
+    "peer",
+    "principal",
+    "status",
+    "refresh_due_at",
+    "group_lifetime_seconds",
+    "delegation"
+  ],
+  "title": "Who am I result",
+  "type": "object",
+  "x-contract-generation": 1,
+  "x-spdx-license-identifier": "Apache-2.0"
+}

@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "description": "A question asked before an effect.",
+  "properties": {
+    "arguments_digest": {
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "type": "string"
+    },
+    "capability": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[a-z][a-z0-9]*(\\.[a-z][a-z0-9]*)*$",
+      "type": "string"
+    },
+    "contract_generation": {
+      "minimum": 1,
+      "type": "integer"
+    },
+    "correlation": {
+      "maxLength": 128,
+      "type": "string"
+    },
+    "delegation": {
+      "$ref": "delegation.schema.json"
+    },
+    "scope": {
+      "maxLength": 128,
+      "minLength": 1,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$",
+      "type": "string"
+    }
+  },
+  "required": [
+    "contract_generation",
+    "capability"
+  ],
+  "title": "Decision ask request",
+  "type": "object",
+  "x-contract-generation": 1,
+  "x-spdx-license-identifier": "Apache-2.0"
+}
