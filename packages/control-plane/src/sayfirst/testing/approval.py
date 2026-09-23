@@ -15,12 +15,19 @@ what the kit accepts and what the control plane accepts cannot drift apart.
 
 Who this kit is for: a provider written elsewhere, which opens its own
 suspension when ``suspend`` is called and answers acts put to it afterwards.
-The control plane's own one-person provider stands **outside** it and is not
-run against it. That provider opens nothing — the wait is a record the core
-keeps, with the question a re-ask is matched by as one of its members, and it
-is opened before the request is put to the provider at all — so holding it to
-this kit would mean teaching the kit to open a wait in the core's store, which
-is the core's business and not a provider's contract (articles 8 and 12).
+The control plane's own one-person provider is not that shape, and is run
+against this kit **as a pair** rather than alone: it opens nothing — the wait
+is a record the core keeps, with the question a re-ask is matched by as one of
+its members, and it is opened before the request is put to the provider at all
+— and it ends nothing, the one writer of a resolution being the core's, under
+the store's lock. So the two writes the core does for it in the daemon are
+supplied around it, and the kit itself is unchanged: every act it puts to that
+provider is judged by the rule below, like any other. That divergence from
+"a provider that does not pass it is not a provider" is one word wide — alone —
+and is recorded, dated, with its way back, as entry 5 of ``docs/exceptions.md``
+(articles 8 and 12). Teaching this kit to open a wait in the core's store is
+what that entry's restoration condition is about; until there is a published
+seam for it, the pair is assembled by the test that holds the entry.
 """
 
 from __future__ import annotations

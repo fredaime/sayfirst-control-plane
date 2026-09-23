@@ -467,3 +467,39 @@ def test_a_name_that_moves_between_the_two_start_calls_refuses_the_start(
         service.start(ProtectionExpectation.per_user(os.geteuid()))
 
     assert "named another file" in str(refused.value), refused.value
+
+
+def test_a_link_whose_own_list_cannot_be_read_does_not_make_the_answer_unknown(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A link grants nothing of its own, so the walk never reads its access list.
+
+    Both walks already said so — a link's bits are skipped, and what could
+    replace it is the directory one component up — but they read the list
+    first. On macOS that read follows the link and can fail, and it did on
+    `/tmp`, a link on that system: a per-user policy under it made the start an
+    `unknown` (`acl_unreadable`) and the daemon refused to start. The target is
+    walked in its own chain, list included, so nothing is lost by not reading
+    it through the link. Measured here by a reader that fails for every link.
+    """
+    from sayfirst_control_plane.access import effective_access
+
+    reader = effective_access._acl
+
+    def unreadable_through_a_link(path: Path):  # type: ignore[no-untyped-def]
+        if path.is_symlink():
+            raise effective_access._AclUnreadable("no list can be read through a link here")
+        return reader(path)
+
+    monkeypatch.setattr(effective_access, "_acl", unreadable_through_a_link)
+    tmp_path.chmod(0o755)
+    deny, _ = _protected_policies(tmp_path)
+    link = tmp_path / "policy.toml"
+    link.symlink_to(deny)
+    store = FilePolicyStore(link, clock=_clock)
+
+    assert store.write_access_of(_foreign()).kind is AccessState.NOT_WRITABLE
+    assert (
+        store.protection_at_start(ProtectionExpectation.per_user(os.geteuid())).kind
+        is ProtectionState.PROTECTED
+    )

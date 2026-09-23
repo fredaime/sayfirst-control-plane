@@ -12,12 +12,18 @@ way to ask for one. Loopback is not an exception (article 6).
 
 from __future__ import annotations
 
-import os
-from collections.abc import Callable, Mapping
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Final
 
 from sayfirst_contract.artifacts import domain_schema
+
+# The default address is the binding's rule, re-exported under the name this
+# module always gave it: a client that is handed no address reads the same
+# function, and a copy kept here would be a second rule (article 13).
+from sayfirst_contract.binding.http_unix_socket.addresses import (
+    default_socket_path as default_socket_path,
+)
 from sayfirst_contract.binding.http_unix_socket.addresses import (
     sun_path_limit as published_sun_path_limit,
 )
@@ -236,30 +242,6 @@ def final_file_mode(mode: str) -> int:
     if mode == SYSTEM:
         return 0o660
     raise ValueError(f"no file mode for mode {mode!r}")
-
-
-def default_socket_path(
-    mode: str,
-    platform: str,
-    *,
-    environ: Mapping[str, str],
-    home: str,
-    directory_exists: Callable[[str], bool] | None = None,
-) -> str:
-    """The default local address of a mode on a platform.
-
-    The runtime directory is used when it is set **and** names a directory
-    that exists; a variable pointing at nothing selects the fallback rather
-    than making the daemon create the place the variable named (rule L2).
-    """
-    if mode == SYSTEM:
-        root = "/var/run" if platform == "darwin" else "/run"
-        return f"{root}/sayfirst/daemon.sock"
-    runtime = environ.get("XDG_RUNTIME_DIR", "")
-    exists = directory_exists or os.path.isdir
-    if runtime and exists(runtime):
-        return f"{runtime.rstrip('/')}/sayfirst/daemon.sock"
-    return f"{home.rstrip('/')}/.sayfirst/run/daemon.sock"
 
 
 def _bounded_int(value: object, bounds: tuple[int, int], reason: str, member: str) -> int:

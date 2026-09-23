@@ -18,7 +18,7 @@ from copy import deepcopy
 from pathlib import Path
 
 import pytest
-from _daemon import ALLOW, ARGUMENTS, DENY, REPOSITORY, SOURCES, SUSPEND, _Daemon
+from _daemon import ALLOW, ARGUMENTS, CLIENT_REPO, DENY, SOURCES, SUSPEND, _Daemon
 from sayfirst_boundary import Denied, Suspended
 from sayfirst_contract.client import Answered, Refused
 from sayfirst_contract.decisions import Outcome
@@ -271,12 +271,12 @@ def test_two_reads_are_answered_on_one_connection_without_a_reconnect(daemon) ->
 # nowhere.
 # ---------------------------------------------------------------------------
 
-#: The open command-line client lives in its own repository, beside this one.
-#: It is invoked as a SUBPROCESS for the reason written beside the same constant
-#: in `test_the_boundary_holds_a_real_grant.py`: the client depends on the
-#: contract and never on the server (article 13), and a process boundary is the
-#: honest way to exercise it from here without pretending otherwise.
-CLIENT_REPO = REPOSITORY.parent / "sf-cli-lt"
+# The open command-line client lives in its own repository, beside this one:
+# `CLIENT_REPO`, found by `_daemon.client_checkout`. It is invoked as a
+# SUBPROCESS for the reason written in `test_the_boundary_holds_a_real_grant.py`:
+# the client depends on the contract and never on the server (article 13), and a
+# process boundary is the honest way to exercise it from here without pretending
+# otherwise.
 
 #: The modules the case below drives, beyond the `ask` the boundary case drives.
 #: A checkout that ships `ask` alone answers `explain` with a usage error, which
@@ -310,9 +310,11 @@ def _client(*argv: str) -> subprocess.CompletedProcess[str]:
         [
             sys.executable,
             # The published entry point is the console script, which resolves to
-            # `main:run`. `-m sayfirst_cli.main` imports the module and exits 0
-            # in silence — there is no `__main__` guard — so invoking it that way
-            # would test nothing while looking like a pass.
+            # `main:run`, and this calls exactly that. `-m sayfirst_cli.main`
+            # would too on a client whose module has its `__main__` guard, but a
+            # checkout from before that guard imports the module and exits 0 in
+            # silence — a test of nothing that looks like a pass — so the case
+            # does not depend on which checkout sits beside this repository.
             "-c",
             "from sayfirst_cli.main import run; run()",
             *argv,

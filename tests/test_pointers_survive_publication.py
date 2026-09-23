@@ -8,9 +8,10 @@ object survives in a pull-request reference that no rewrite reaches. The public
 repository is created fresh, under a name the operator chose, and the URL is
 written in the same act.
 
-Until that act, the names below are a decision rather than a page. Writing them
-down early is what gives the act one thing to check instead of a search to make,
-and what keeps a distribution from shipping a link that resolves for nobody.
+Until that act, taken on 2026-09-17, the names below were a decision rather than
+a page. Writing them down early is what gave the act one thing to check instead
+of a search to make, and it is what keeps a distribution from shipping a link
+that resolves for nobody.
 
 Two rules, both about the OPERATION rather than the name. A local sibling path
 is not a promise that a reader can open a page, and the gate has to keep naming

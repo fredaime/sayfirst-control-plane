@@ -39,6 +39,7 @@ from __future__ import annotations
 
 import json
 import socket
+import threading
 import time
 
 import pytest
@@ -46,6 +47,7 @@ from handler_bytes import (
     GRANT_LIFETIME_SECONDS,
     HandlerHost,
     answer,
+    declared_length,
     read_one_document,
     request_bytes,
     running,
@@ -166,23 +168,55 @@ def _answered(peer: socket.socket, raw: bytes) -> dict:
 def _unanswered(peer: socket.socket, raw: bytes) -> bool:
     """Whether asking again on this connection gets no answer at all.
 
-    Two ways one fact reaches a caller, and which of them it is, is a race this
+    Three ways one fact reaches a caller, and which of them it is, is a race this
     has no business pinning: the daemon may still hold the read side, in which
     case the request goes out and the read after it is the end of the
-    connection; or it may already be gone, in which case the write itself
-    fails. Both are the bare end of file the project's transport reports as
-    `unreachable`, and neither is an answer.
+    connection; it may already be gone, in which case the write itself fails;
+    or it may close while the request is still unread on its side, in which case
+    the kernel resets the connection and the read raises. A reset carries no
+    bytes — on a stream socket it is reported only once this side's queue is
+    empty, so an answer sent before it would still be read first. All three are
+    what the project's transport reports as `unreachable`, and none is an answer.
     """
     try:
         peer.sendall(raw)
     except OSError:
         return True
-    return peer.recv(65536) == b""
+    try:
+        return peer.recv(65536) == b""
+    except ConnectionResetError:
+        return True
 
 
 def _get(target: str) -> bytes:
     """One read request, framed the way a conforming client frames it."""
     return f"GET {target} HTTP/1.1\r\nHost: sayfirst\r\n\r\n".encode()
+
+
+def test_asking_again_counts_a_reset_as_no_answer() -> None:
+    """The helper the two cases below lean on must not pin which way « gone » arrives.
+
+    A daemon that closes a stream's connection while the request asked again on
+    it is still unread on its side does not end the file: the kernel resets the
+    connection, and the read raises instead of returning nothing. That is the
+    same fact as the two ways `_unanswered` already accepts — no answer came —
+    and a helper that let it escape made the case below fail on whichever run
+    lost the race. The race is forced here rather than waited for: the far end
+    peeks until the request has arrived, then closes with it unread.
+    """
+    here, there = socket.socketpair(socket.AF_UNIX, socket.SOCK_STREAM)
+
+    def close_with_the_request_unread() -> None:
+        there.recv(1, socket.MSG_PEEK)
+        there.close()
+
+    closer = threading.Thread(target=close_with_the_request_unread)
+    closer.start()
+    try:
+        assert _unanswered(here, _get("/policy/status?contract_generation=1"))
+    finally:
+        closer.join(timeout=5)
+        here.close()
 
 
 def test_a_document_answer_leaves_the_connection_open_for_the_next_read(host) -> None:  # type: ignore[no-untyped-def]
@@ -339,3 +373,105 @@ def test_a_peer_that_half_closes_a_held_stream_is_a_boundary_that_went_away(host
 
     ended = [entry for entry in events.entries if entry.kind == "grant.ended"]
     assert [entry.details["reason"] for entry in ended] == ["connection_lost"], ended
+
+
+def _pipelined(host, raw: bytes) -> bytes:  # type: ignore[no-untyped-def]
+    """Write `raw` as one client write, run the handler, and return every byte it wrote.
+
+    A real `AF_UNIX` socketpair, as everything else in this module uses: the
+    handler's own reads and writes, and its decision to keep the connection or
+    to let it go, are the production ones. The write side is shut down before
+    the handler runs so that a handler which decides to KEEP this connection
+    still returns — at the end of the stream rather than at the keep-alive
+    bound — and the case can then count what it wrote. Both requests are
+    already in the kernel buffer when it starts, so a kept connection reads the
+    second one and answers it; that is what makes the count a distinction.
+    """
+    # Imported here, the way this module already imports `policy_bytes` where
+    # it is used: the cases above stand exactly as they were written.
+    from contextlib import suppress
+    from types import SimpleNamespace
+
+    from sayfirst_control_plane.adapters.http_surface import RequestHandler
+
+    server, peer = socket.socketpair(socket.AF_UNIX)
+    try:
+        peer.sendall(raw)
+        peer.shutdown(socket.SHUT_WR)
+        try:
+            RequestHandler(
+                server, "", SimpleNamespace(daemon=host.daemon), identity=host.identity()
+            )
+        finally:
+            with suppress(OSError):
+                server.shutdown(socket.SHUT_RDWR)
+            server.close()
+        peer.settimeout(5.0)
+        written = b""
+        while True:
+            part = peer.recv(65536)
+            if not part:
+                return written
+            written += part
+    finally:
+        peer.close()
+
+
+def _responses(written: bytes) -> int:
+    """How many answers those bytes hold, counted by status line."""
+    return written.count(b"HTTP/1.1 ")
+
+
+def _with_connection_close(raw: bytes) -> bytes:
+    """The same request, with the client asking for the connection to end after it."""
+    head, separator, body = raw.partition(b"\r\n\r\n")
+    return head + b"\r\nConnection: close" + separator + body
+
+
+def test_a_client_that_asked_for_the_connection_to_close_is_not_kept_alive(host) -> None:  # type: ignore[no-untyped-def]
+    """Rule C4 the other way round: the keep is the daemon's to offer, not to impose.
+
+    `_answered_on_the_connection` set `close_connection` to `streamed`
+    unconditionally, so a document answer did not merely decline to close the
+    connection — it RESET to `False` the `True` the base handler had already
+    derived from this request's own `Connection: close` header. The client said
+    this was its last request on this connection; the daemon kept it anyway and
+    answered the next one pipelined behind it.
+
+    HTTP/1.1 makes that header the caller's decision (RFC 9112 section 9.6),
+    and the caller is the one that knows: a client closing its side after the
+    answer reads the daemon's next answer as a reset rather than as a document.
+    Two requests go out in one write; exactly one answer comes back.
+    """
+    written = _pipelined(
+        host,
+        _with_connection_close(request_bytes()) + _get("/policy/status?contract_generation=1"),
+    )
+    head, separator, body = written.partition(b"\r\n\r\n")
+    assert _responses(written) == 1, written
+    # Exactly the one answer and not a byte more: the decision the client asked
+    # for, ended where its own head said it ends.
+    assert written == head + separator + body[: declared_length(head)], written
+    assert json.loads(body)["outcome"] == "allow", body
+
+    # NOT asserted here, and open: this answer's head does not publish
+    # `Connection: close`. The head is written by `adapters/api`, which does
+    # not see the request's headers, so saying it there is a change to a file
+    # this work does not own. A client that asked for the close already knows
+    # it is coming; a client that did not ask never sees one, because only a
+    # stream closes without being asked and that one does publish it.
+
+
+def test_the_same_two_requests_are_both_answered_when_the_client_asked_for_neither(host) -> None:  # type: ignore[no-untyped-def]
+    """Anti-vacuity: without the header this harness really does serve the second.
+
+    The case above counts one answer. Counting one answer is only a fact about
+    `Connection: close` if the same two requests, written the same way, get two
+    without it — otherwise it would be a fact about pipelining, or about socket
+    pairs, and would hold just as well if the daemon had stopped keeping any
+    connection at all. The deliberate keep of a document answer is what this
+    half pins, and it is the behaviour the case above must not break.
+    """
+    written = _pipelined(host, request_bytes() + _get("/policy/status?contract_generation=1"))
+    assert _responses(written) == 2, written
+    assert b"Connection: close" not in written, written

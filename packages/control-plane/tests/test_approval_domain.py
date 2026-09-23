@@ -333,3 +333,66 @@ def test_an_expired_approval_refuses_a_resolution_reason() -> None:
 
     with pytest.raises(ValueError, match="expired approval carries no resolution_reason"):
         replace(_expired(), resolution_reason="took too long")
+
+
+# -- the two members that say where a record is in its life --------------------
+
+
+def test_a_wait_is_opened_unpublished_and_publication_is_a_transition() -> None:
+    """Article 2: « nobody has been told about this wait » is a fact the record holds.
+
+    A suspension exists in the store before its provider has taken it up and
+    before the decision naming it is committed, and in that window it belongs to
+    the ask that minted it. The member is what lets the store refuse to answer
+    another ask with it and refuse to let anyone else withdraw it; a record with
+    no such member made « opened » and « published » the same state, and a
+    second ask was answered a reference the first one then abandoned.
+    """
+    assert _pending().published is False
+    assert replace(_pending(), published=True).published is True
+
+
+def test_a_consumed_approval_carries_the_instant_its_execution_was_taken() -> None:
+    """Article 2 on both sides: a spend is dated, and an instant names a spend that happened.
+
+    The instant is a member rather than a derivation because nothing else in
+    the record holds it: an approved approval nobody has spent is kept for the
+    life of the process, so the spend may be an hour after the act, and how
+    long the record is kept afterwards is measured from the spend.
+    """
+    spent_at = REQUESTED_AT + timedelta(days=365)
+    spent = replace(_approved(), claimed=True, consumed=True, consumed_at=spent_at)
+    assert spent.consumed_at == spent_at
+
+    with pytest.raises(ValueError, match="carries the instant its execution was taken"):
+        replace(_approved(), claimed=True, consumed=True)
+    with pytest.raises(ValueError, match="unspent approval carries no consumed_at"):
+        replace(_approved(), consumed_at=spent_at)
+    with pytest.raises(ValueError, match="cannot precede its resolved_at"):
+        replace(
+            _approved(),
+            claimed=True,
+            consumed=True,
+            consumed_at=REQUESTED_AT + timedelta(seconds=1),
+        )
+    with pytest.raises(ValueError, match="consumed_at must be offset-aware"):
+        replace(
+            _approved(),
+            claimed=True,
+            consumed=True,
+            consumed_at=datetime(2027, 1, 1),
+        )
+
+
+def test_the_spend_is_not_a_member_of_the_published_document() -> None:
+    """Article 13: the `approval-result` a reader is handed is the published set, and no more."""
+    spent = replace(
+        _approved(),
+        claimed=True,
+        consumed=True,
+        consumed_at=REQUESTED_AT + timedelta(days=365),
+    )
+    document = spent.to_document(REQUESTED_AT + timedelta(days=365), GENERATION)
+    assert "consumed_at" not in document
+    assert "published" not in document
+    validate_document(document, "approval-result")

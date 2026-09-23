@@ -70,7 +70,9 @@ class CouldNotAsk(BoundaryError):
     allowance either. The body does not run.
     """
 
-    def __init__(self, *, detail: str, retryable: bool) -> None:
+    def __init__(self, *, detail: str, retryable: bool | None) -> None:
         super().__init__(f"could not ask: {detail}")
         self.detail = detail
+        # The contract's three values: `None` is « cannot say » — a request that
+        # may have been received and acted on — and is never rounded to either.
         self.retryable = retryable

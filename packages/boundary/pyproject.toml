@@ -1,11 +1,11 @@
 # SPDX-License-Identifier: Apache-2.0
 [project]
 name = "sayfirst-boundary"
-version = "0.2.0"
+version = "0.3.0"
 description = "The in-process boundary that holds a grant and asks before an effect"
 readme = "README.md"
 requires-python = ">=3.12,<3.15"
-dependencies = ["sayfirst-contract==0.2.0"]
+dependencies = ["sayfirst-contract==0.3.0"]
 license = "Apache-2.0"
 
 authors = [{ name = "fredaime", email = "frederic.aime@gmail.com" }]
@@ -17,12 +17,12 @@ classifiers = [
   "Programming Language :: Python :: 3.14",
 ]
 
-# The public repository this distribution sends a reader to. It does not exist
-# yet: article 0 creates it fresh in the act that publishes, and these are the
-# names the operator chose for that act. `tests/test_pointers_survive_publication.py`
-# holds them, so a rename lands in every project file and in the guard together
-# or not at all. No licence classifier: the licence is declared as an expression
-# above, and an index refuses a distribution that carries both.
+# The public repository this distribution sends a reader to. It was created
+# fresh, as article 0 asks, in the act that published it on 2026-09-17, under
+# the name the operator chose. `tests/test_pointers_survive_publication.py`
+# holds these URLs, so a rename lands in every project file and in the guard
+# together or not at all. No licence classifier: the licence is declared as an
+# expression above, and an index refuses a distribution that carries both.
 [project.urls]
 Repository = "https://github.com/fredaime/sayfirst-control-plane"
 Documentation = "https://github.com/fredaime/sayfirst-control-plane/blob/main/packages/boundary/README.md"

@@ -21,6 +21,31 @@ SOURCES = (
     REPOSITORY / "packages" / "contract" / "src",
     REPOSITORY / "packages" / "control-plane" / "src",
 )
+
+#: The names the open command-line client's checkout is looked for under, beside
+#: this repository, in order: `sayfirst-cli`, the name every public document gives
+#: its repository, and then `sf-cli-lt`, the name of the repository it is
+#: published from.
+CLIENT_CHECKOUT_NAMES: tuple[str, ...] = ("sayfirst-cli", "sf-cli-lt")
+
+
+def client_checkout(parent: Path = REPOSITORY.parent) -> Path:
+    """Where the open command-line client is checked out beside this repository.
+
+    The first of `CLIENT_CHECKOUT_NAMES` that holds the client's package. When
+    none does, the first name, which holds no client: every case that runs the
+    client is guarded on a file inside the checkout, so it skips, and its reason
+    — the client is not checked out beside this repository — is true.
+    """
+    for name in CLIENT_CHECKOUT_NAMES:
+        candidate = parent / name
+        if (candidate / "src" / "sayfirst_cli").is_dir():
+            return candidate
+    return parent / CLIENT_CHECKOUT_NAMES[0]
+
+
+#: The open command-line client, found once for every module that runs it.
+CLIENT_REPO = client_checkout()
 ME = pwd.getpwuid(os.geteuid()).pw_name
 PRINCIPAL = f"user:{ME}"
 ARGUMENTS = {"to": "someone@example.test"}

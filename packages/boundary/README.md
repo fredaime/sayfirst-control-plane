@@ -9,7 +9,9 @@ over a socket whose peer it verified, caches an `allow` as a grant for exactly
 the question it answers, and stops honouring that grant the moment any of four
 things happens: the connection carrying it ends, its lifetime runs out, the
 policy version it was issued under changes, or the control plane goes silent for
-a lifetime.
+a lifetime. Built with `hold_grants=False`, it holds nothing and asks for every
+act — what a verifier needs, whose proof is one recorded decision for each
+effect, while a grant hit records none.
 
 It publishes no exit codes. Outcomes leave as exceptions, and a caller that runs
 a process decides what to exit with.

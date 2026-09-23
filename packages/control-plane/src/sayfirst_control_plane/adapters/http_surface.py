@@ -663,9 +663,17 @@ class RequestHandler(BaseHTTPRequestHandler):
         that is still good for the next request, and closing it made every
         caller pay a connect and a re-verification for its second read while
         rule C4 forbade it re-opening silently.
+
+        That keep is this daemon's to OFFER, never to impose, so the close is
+        taken here rather than assigned: a `False` written flat would reset the
+        `True` the parser had already derived — from this request's own
+        `Connection: close`, or from a version that does not keep connections —
+        and answer, on a connection the caller said it was done with, a request
+        pipelined behind it. Article 13 makes that header the caller's decision
+        and the caller is the one that knows it.
         """
         self.answered = True
-        self.close_connection = streamed
+        self.close_connection = streamed or self.close_connection
 
     def _evidence_connection(self) -> EvidenceConnection:
         """This connection, as the evidence pipeline grades it."""
@@ -929,6 +937,15 @@ class RequestHandler(BaseHTTPRequestHandler):
                 correlation=decision.correlation,
                 principal_references=tuple(references) if isinstance(references, list) else (),
                 evaluation_recipe=extra.get("evaluation_recipe"),
+                # The reference of the wait a resumed decision was taken on is
+                # deliberately NOT copied here. `decision_position` pairs this
+                # entry with the decision record by identity, and that record
+                # is where `approval_ref` lives and what the socket's decision
+                # read serves; repeating it in the body would widen the
+                # published `evidence-entry` and the preimage the verifier
+                # re-derives, which is a contract change and not a copy
+                # (`docs/deployment.md`, « Who may resolve a suspended
+                # effect »).
                 position=getattr(answer, "position", None),
             ),
         )

@@ -102,11 +102,12 @@ def test_the_command_reports_every_scenario_and_its_reason(tmp_path: Path) -> No
 
     rendered = output.getvalue()
     # One scenario replayed and ten declared absent is an incomplete run, which
-    # block 2.6's verdict reports as a failure of the whole run rather than as
-    # a proof (article 2). What this test is about is the three per-scenario
+    # the report's own verdict calls unknown — neither a proof nor a failure of
+    # what was replayed (article 2) — with the exit status the conformance
+    # command gives it too. What this test is about is the three per-scenario
     # reasons below, each of which is still rendered.
-    assert exit_code == 1
-    assert "run\tfailed\t10 server-bound scenarios were not replayed" in rendered
+    assert exit_code == 3
+    assert "run\tunknown\t10 server-bound scenarios were not replayed" in rendered
     assert "allow\tproven\tmatched expected members" in rendered
     for name, reason in missing.items():
         assert f"{name}\tnot-applicable\t{reason}" in rendered
@@ -122,8 +123,8 @@ def test_the_command_fails_when_every_scenario_is_expected_absent() -> None:
         if scenario.binds_server():
             arguments.extend(("--expected-absent", f"{name}=skeleton block not present"))
     output = StringIO()
-    assert main(arguments, stdout=output) == 1
-    assert "run\tfailed\t11 server-bound scenarios were not replayed" in output.getvalue()
+    assert main(arguments, stdout=output) == 3
+    assert "run\tunknown\t11 server-bound scenarios were not replayed" in output.getvalue()
 
 
 def test_the_socket_client_refuses_an_unexpected_listener(tmp_path: Path) -> None:

@@ -9,14 +9,24 @@ from typing import get_args, get_type_hints
 
 import pytest
 from sayfirst.testing import ApprovalProviderContract, PrivacyRedactorContract
+from sayfirst.testing.approval import DEADLINE as KIT_DEADLINE
+from sayfirst.testing.approval import REQUESTED_AT as KIT_REQUESTED_AT
 from sayfirst_contract.decisions import Outcome, Reason
+from sayfirst_control_plane.application.approvals import (
+    ApprovalStore,
+    write_resolution,
+)
+from sayfirst_control_plane.domain.approval import Approval, Question
 from sayfirst_control_plane.plugins.approval import (
     ApprovalAnswerRefused,
     RefusedProviderAnswer,
     UnrecordedApprovalResolution,
     resume_through_provider,
 )
-from sayfirst_control_plane.plugins.defaults import SingleApprover
+from sayfirst_control_plane.plugins.defaults import (
+    SINGLE_APPROVER_REGISTRATION,
+    SingleApprover,
+)
 from sayfirst_control_plane.plugins.interfaces import (
     ApprovalAction,
     ApprovalAlreadyExists,
@@ -185,9 +195,88 @@ class ForgingApprover:
         )
 
 
+#: The instant the pair below judges every act at: inside the wait the kit's own
+#: request carries, read from the kit rather than restated here, so a change to
+#: the kit's deadline cannot leave this fixture dating acts after the wait ran
+#: out. One clock, the store's, as `keep_waits_in` requires.
+_WITHIN_THE_WAIT = KIT_REQUESTED_AT + (KIT_DEADLINE - KIT_REQUESTED_AT) / 2
+
+
+class _RegisteredProviderWithTheCoreSHalf:
+    """The registered default, with the two writes the core does for it in the daemon.
+
+    Entry 5 of `docs/exceptions.md`, assembled. The published kit drives a
+    provider that opens its own suspension and ends it; the provider a
+    configuration actually activates does neither, and the two things it does
+    not do are the core's writes, not gaps in its judgement:
+
+    * the wait is opened by the core before the request is put to the provider,
+      because the `Question` a re-ask is matched by — the connection's principal
+      reference and the ask's arguments digest — is a member of the record and
+      is **not** a member of `ApprovalRequest`. This fixture has to invent both,
+      and that it has to is the whole reason the provider may not open its own:
+      an invented question is a wait no re-ask finds (article 3);
+    * the resolution is written by `write_resolution`, under the store's lock,
+      which is what makes the second act on a resolved approval refusable at
+      all (article 12).
+
+    Nothing of the kit is relaxed by supplying them: the fixture adds no
+    judgement, answers nothing itself, and every act still goes through the
+    kit's one guarded seam and its one derivation rule.
+    """
+
+    def __init__(self) -> None:
+        self.provider = SINGLE_APPROVER_REGISTRATION.factory()
+        #: What `bootstrap.compose` does for the real deployment, on a clock the
+        #: kit's own wait is still running on.
+        self.store = self.provider.keep_waits_in(ApprovalStore(clock=lambda: _WITHIN_THE_WAIT))
+
+    def suspend(self, request: ApprovalRequest) -> SuspendedApproval:
+        self._the_core_opens_the_wait(request)
+        return self.provider.suspend(request)
+
+    def resume(self, suspended: SuspendedApproval, action: ApprovalAction) -> ResolvedApproval:
+        resolved = self.provider.resume(suspended, action)
+        write_resolution(self.store, resolved)
+        return resolved
+
+    def _the_core_opens_the_wait(self, request: ApprovalRequest) -> None:
+        self.store.open(
+            Approval(
+                approval_ref=request.approval_ref,
+                decision_ref=request.decision_ref,
+                # Invented here, and nowhere else: a daemon reads both off the
+                # connection and the ask. A provider has neither.
+                question=Question(
+                    scope=request.scope,
+                    principal_reference=f"kit-fixture:{request.approval_ref}",
+                    capability=request.capability,
+                    arguments_digest=f"kit-fixture:{request.decision_ref}",
+                ),
+                requested_at=request.requested_at,
+                deadline=request.deadline,
+            )
+        )
+
+
+class _OpenedButNeverWritten(_RegisteredProviderWithTheCoreSHalf):
+    """The same pair with the core's writer withheld, and nothing else changed."""
+
+    def resume(self, suspended: SuspendedApproval, action: ApprovalAction) -> ResolvedApproval:
+        return self.provider.resume(suspended, action)
+
+
 def test_the_two_open_providers_pass_the_published_contract_suites() -> None:
+    """The providers a configuration activates, not the examples beside them.
+
+    `SingleApprover` is the port's worked example and passes this suite
+    unassisted; it is not what any daemon composes, and a suite run against it
+    certified an implementation nothing runs. What the registry builds is the
+    store-backed provider, and it is what is put to the unchanged kit here —
+    as a pair, under entry 5 of `docs/exceptions.md`.
+    """
     PrivacyRedactorContract().assert_conforms(NoRedaction)
-    ApprovalProviderContract().assert_conforms(SingleApprover)
+    ApprovalProviderContract().assert_conforms(_RegisteredProviderWithTheCoreSHalf)
 
 
 def test_the_approval_contract_rejects_a_provider_that_falsifies_the_action() -> None:
@@ -949,7 +1038,7 @@ def test_a_provider_that_takes_fewer_signatures_than_it_promised_fails_the_kit()
         contract.assert_conforms(UnderSigningApprover)
 
 
-# -- the shipped provider, and the kit it stands outside of -------------------
+# -- the shipped provider, and the kit it is certified by as a pair ----------
 
 
 def test_the_shipped_approval_provider_is_the_core_s_own_store_backed_one() -> None:
@@ -974,27 +1063,56 @@ def test_the_shipped_approval_provider_is_the_core_s_own_store_backed_one() -> N
     assert signature(provider.suspend) == signature(SingleApprover().suspend)
 
 
-def test_the_conformance_kit_is_not_run_against_the_core_s_own_provider() -> None:
-    """Article 8: the kit is the contract for a provider written elsewhere.
+def test_the_registered_provider_alone_stops_at_the_two_writes_the_core_owns() -> None:
+    """Entry 5, at its two boundaries: what the registered provider cannot do alone.
 
-    The core's provider opens no wait of its own — the core keeps the record,
-    with the question a re-ask is matched by inside it, before the request is
-    put to the provider — and the kit opens every suspension through `suspend`.
-    So it is outside the kit by construction, the kit's own docstring says so,
-    and this reads every case in the tree to hold that nobody quietly points
-    the kit at it: a list of modules would be somebody's memory.
+    Not a relaxation of the kit — an assertion of exactly where the kit stops
+    it, so that a change moving either write into the provider fails here
+    instead of passing quietly. The first boundary is opening: a wait this core
+    does not keep is refused rather than opened under a question the provider
+    would have had to invent (article 3). The second is ending: with the wait
+    opened but nothing writing the resolution, the provider answers a second act
+    on an approval already resolved, because whether the wait is still open is
+    the writer's judgement under the store's lock and not this provider's
+    (article 12).
+    """
+    with pytest.raises(ApprovalRequestMismatch, match="is not a suspension this core keeps"):
+        ApprovalProviderContract().assert_conforms(SINGLE_APPROVER_REGISTRATION.factory)
+
+    with pytest.raises(AssertionError, match="second action on a terminal approval"):
+        ApprovalProviderContract().assert_conforms(_OpenedButNeverWritten)
+
+
+def test_the_exception_register_records_why_the_registered_provider_is_certified_as_a_pair() -> (
+    None
+):
+    """Article 0: a property relaxed for a named surface is a dated entry or it is a defect.
+
+    The divergence between the provider a configuration activates and the
+    implementation the published suite certifies was found by review, and it is
+    a relaxation of one word of article 8 — *alone*. This fails when the entry
+    is removed, closed or emptied while the divergence stands, and when the kit
+    stops saying so where a third party reads it.
     """
     from sayfirst.testing import approval as kit
 
-    assert "stands **outside** it" in (kit.__doc__ or "")
-    tests = Path(__file__).resolve().parents[1] / "tests"
-    pointed = []
-    for module in sorted(tests.rglob("*.py")):
-        source = module.read_text(encoding="utf-8")
-        for line in source.splitlines():
-            if "assert_conforms(" not in line:
-                continue
-            named = line.split("assert_conforms(", 1)[1]
-            if "SimpleApprovalProvider" in named or "SINGLE_APPROVER_REGISTRATION" in named:
-                pointed.append(f"{module.name}: {line.strip()}")
-    assert pointed == [], pointed
+    register = (Path(__file__).resolve().parents[3] / "docs" / "exceptions.md").read_text(
+        encoding="utf-8"
+    )
+    heading = "## 5 — The core's own approval provider is certified as a pair, not alone"
+    assert heading in register
+    entry = register.split(heading, 1)[1].split("\n## ", 1)[0]
+    assert "**Opened.** 2026-09-20." in entry
+    assert "Article 8" in entry
+    assert "`SINGLE_APPROVER_REGISTRATION`" in entry
+    for part in (
+        "**Article relaxed.**",
+        "**Named surface.**",
+        "**Stated reason.**",
+        "**Compensating evidence.**",
+        "**Restoration condition.**",
+    ):
+        assert part in entry, part
+
+    assert "as a pair" in (kit.__doc__ or "")
+    assert "entry 5 of ``docs/exceptions.md``" in (kit.__doc__ or "")

@@ -223,6 +223,17 @@ def test_the_default_local_address_follows_the_deployment_mode() -> None:
     )
 
 
+def test_the_default_local_address_is_the_binding_s_rule_and_not_a_second_copy() -> None:
+    """Article 13: a client given no address reads the same rule this daemon does.
+
+    The same object, not an equal one: two functions that agree today are two
+    rules, and the one a client reads is the contract's.
+    """
+    from sayfirst_contract.binding.http_unix_socket import addresses
+
+    assert default_socket_path is addresses.default_socket_path
+
+
 def test_the_local_address_is_never_briefly_more_permissive() -> None:
     """Article 6, rule S2: the file is created at its final mode."""
     assert umask_for("per_user") == 0o077

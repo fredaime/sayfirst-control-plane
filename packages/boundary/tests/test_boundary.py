@@ -308,3 +308,86 @@ def test_every_published_code_reaches_the_outcome_its_class_names(code: str) -> 
     expected = AskRefused if problem_class(code) == "refused" else CouldNotAsk
     with pytest.raises(expected), boundary.request("example.effect", {}):
         pytest.fail("the body ran on a non-allow")
+
+
+# -- a boundary that holds no grants, and questions that cannot be put ----------------
+
+
+def test_a_boundary_that_holds_no_grants_asks_for_every_effect(client: _Client) -> None:
+    """A verifier needs one recorded decision per effect, so it holds nothing.
+
+    Two identical acts, two asks, and neither answer's channel kept: a grant this
+    boundary will never consult is a connection it has no reason to hold.
+    """
+    first, second = _Stream(_grant()), _Stream(_grant())
+    client._answers = [
+        (Answered(_decision(Outcome.ALLOW), 1), first),
+        (Answered(_decision(Outcome.ALLOW), 1), second),
+    ]
+    held = Boundary(
+        client=client, principal_reference=PRINCIPAL, clock=lambda: NOW, hold_grants=False
+    )
+    try:
+        for _ in range(2):
+            with held.request("example.effect", ARGUMENTS):
+                pass
+    finally:
+        held.close()
+    assert len(client.asks) == 2
+    assert first.closed and second.closed
+
+
+@pytest.mark.parametrize(
+    "arguments",
+    [
+        {"args": ["cat", "/tmp/\udcff"]},  # a path that is not UTF-8, as os.fsdecode leaves it
+        {"value": float("nan")},  # a number the wire cannot carry
+        {"value": object()},  # a value nothing can describe
+    ],
+    ids=["undecodable-path", "nan", "object"],
+)
+def test_arguments_that_cannot_be_digested_are_a_question_not_asked(
+    client: _Client, boundary: Boundary, arguments: dict[str, object]
+) -> None:
+    """Could not ask — one of the four outcomes — and never a bare encoding error."""
+    ran = False
+    with pytest.raises(CouldNotAsk) as raised, boundary.request("example.effect", arguments):
+        ran = True  # pragma: no cover
+    assert ran is False
+    assert client.asks == []
+    assert raised.value.retryable is False
+
+
+def test_an_unknown_retryability_stays_unknown(client: _Client, boundary: Boundary) -> None:
+    """The contract's third value is not rounded to « no »: that would be a claim."""
+    problem = Problem(
+        code=ProblemCode.UNREACHABLE, message="lost", retryable=None, contract_generation=1
+    )
+    client._answers = [(CouldNotAskResult(problem), None)]
+    with pytest.raises(CouldNotAsk) as raised, boundary.request("example.effect", ARGUMENTS):
+        pass  # pragma: no cover
+    assert raised.value.retryable is None
+
+
+def test_a_grant_that_cannot_be_held_still_lets_the_allowed_effect_run(
+    client: _Client, boundary: Boundary, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The allow was answered and recorded; failing to hold its grant only drops the cache."""
+    from sayfirst_boundary import boundary as module
+
+    def unholdable(stream: object, **_: object) -> object:
+        raise RuntimeError("can't start new thread")
+
+    monkeypatch.setattr(module, "SignalReader", unholdable)
+    stream = _Stream(_grant())
+    client._answers = [
+        (Answered(_decision(Outcome.ALLOW), 1), stream),
+        (Answered(_decision(Outcome.ALLOW), 1), _Stream(_grant())),
+    ]
+    ran = []
+    for _ in range(2):
+        with boundary.request("example.effect", ARGUMENTS):
+            ran.append(True)
+    assert ran == [True, True]
+    assert stream.closed
+    assert len(client.asks) == 2

@@ -22,12 +22,14 @@ import json
 import os
 import pwd
 import socket
+import sys
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
-from typing import Any, Final
+from typing import Any, Final, NamedTuple
 from urllib.parse import quote, urlencode
 
 from ..approvals import Approval, ApprovalResolution
+from ..binding.http_unix_socket.addresses import default_socket_path
 from ..client import Answered, CouldNotAsk, Refused, Result
 from ..decisions import Decision, read_decision
 from ..generation import CONTRACT_GENERATION, SUPPORTED_GENERATIONS, negotiate_generation
@@ -151,6 +153,65 @@ class SocketProfile:
             raise ProfileMisuse("a system profile names the account the daemon runs as")
         if self.mode == PER_USER and self.daemon_user:
             raise ProfileMisuse("a per-user profile has one principal and names no account")
+
+
+class ProfileAddress(NamedTuple):
+    """Where a profile is looked for, and whether anybody said so.
+
+    `defaulted` travels with the path because a caller owes its reader the
+    address whenever nobody typed it: a failure at a name the reader never saw
+    is a failure they cannot act on (article 2).
+    """
+
+    path: str
+    defaulted: bool
+
+    def looked_at(self) -> str:
+        """The one sentence that tells a reader which address nobody typed."""
+        return f"socket: {self.path} (the per-user default; no --socket was given)"
+
+
+def profile_address(
+    named: str | None,
+    mode: str,
+    *,
+    environ: Mapping[str, str] | None = None,
+    home: str | None = None,
+    platform: str | None = None,
+) -> ProfileAddress:
+    """The address a profile is looked for at: the one it was given, or the default.
+
+    Only a per-user profile has a default. It is the binding's one rule
+    (`default_socket_path`), which is the rule a per-user daemon that was given
+    no address binds by, so the two meet without either being told. Nothing is
+    searched for and nothing is guessed: one name is computed, and whoever
+    answers there is still held to the peer credential this profile expects
+    (article 6, rule C1) — finding an address admits nobody.
+
+    A system profile is never given one. It already has to name the account the
+    daemon runs as, because a default there would let a profile written for one
+    host verify the wrong thing on another; the address is the other half of the
+    same sentence, and it is asked for in the same words.
+    """
+    if named:
+        # Absolute once, against the directory the command ran in. A relative
+        # name resolved on every connection would be resolved against whatever
+        # directory the process had moved to by then — and whichever daemon of
+        # the same account served that name there would pass the peer check.
+        return ProfileAddress(os.path.abspath(named), False)
+    if mode != PER_USER:
+        raise ProfileMisuse(
+            "a system profile names the daemon's socket: --socket is required in system mode"
+        )
+    return ProfileAddress(
+        default_socket_path(
+            PER_USER,
+            sys.platform if platform is None else platform,
+            environ=os.environ if environ is None else environ,
+            home=os.path.expanduser("~") if home is None else home,
+        ),
+        True,
+    )
 
 
 def expected_principal_uid(
@@ -612,11 +673,18 @@ def connect(
     platform: str | None = None,
     socket_factory: Callable[[], socket.socket] | None = None,
     account_uid: Callable[[str], int | None] | None = None,
+    timeout: float | None = None,
 ) -> VerifiedConnection:
     """Open the connection, verify the far end, and only then hand it over.
 
     Nothing is written until the credential has been read and compared: an
     impostor at the address receives zero bytes (rules C2, C4, C5).
+
+    `timeout` bounds every step of the connection — the connect, the
+    credential, each read and write after it — in seconds. A step that runs past
+    it is the unreachable problem every other way of not being answered already
+    is. `None` waits as long as the far end takes, which a caller facing a
+    process that accepts a connection and never answers should not choose.
 
     The generation the profile pins is the generation this connection is
     recorded on (article 13). A profile pinned to one this package does not
@@ -640,7 +708,14 @@ def connect(
         # Resolved on every open, never once per profile: the account a system
         # profile names may be remapped between two connections (rules C1, C4).
         expected = expected_principal_uid(profile, account_uid=account_uid)
-        stream = (socket_factory or _default_socket)()
+        try:
+            stream = (socket_factory or _default_socket)()
+        except OSError as error:
+            # Out of descriptors, say: no connection was made, so this is the
+            # same non-answer as a far end that is not there.
+            raise SocketClientProblem(_problem(ProblemCode.UNREACHABLE, str(error))) from error
+        if timeout is not None:
+            stream.settimeout(timeout)
         try:
             stream.connect(profile.socket_path)
         except OSError as error:

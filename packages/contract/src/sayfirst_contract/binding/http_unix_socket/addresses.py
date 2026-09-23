@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
-"""How long a local address may be, and how a replay run stays inside it.
+"""Where a local address is by default, how long one may be, and how a replay run stays inside it.
 
 The binding of article 13 names its transport, and this is the one fact of that
 transport a caller cannot negotiate: `sockaddr_un.sun_path` is a fixed array,
@@ -31,7 +31,7 @@ from __future__ import annotations
 
 import os
 import sys
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from hashlib import blake2s
 from pathlib import Path
 from typing import Final
@@ -87,6 +87,43 @@ class AddressTooLong(ValueError):
 def sun_path_limit(platform: str) -> int:
     """The size of `sun_path` on a platform, terminating NUL included."""
     return SUN_PATH_LIMITS.get(platform, DEFAULT_SUN_PATH_LIMIT)
+
+
+def default_socket_path(
+    mode: str,
+    platform: str,
+    *,
+    environ: Mapping[str, str],
+    home: str,
+    directory_exists: Callable[[str], bool] | None = None,
+) -> str:
+    """The default local address of a mode on a platform.
+
+    Published here, in the binding, because it is a fact both ends of the
+    transport have to agree on: a daemon whose deployment names no address
+    chooses this one, and a client that is given none looks here. A client may
+    not import the server (article 14), so while the rule lived there every
+    client had to be handed the address — and a second copy of it on the client
+    side would be a second answer waiting to disagree.
+
+    The runtime directory is used when it is set **and** names a directory
+    that exists; a variable pointing at nothing selects the fallback rather
+    than making the daemon create the place the variable named (rule L2).
+
+    Both ends read their OWN environment. A daemon started where the variable
+    is unset and a client run where it is set compute two names, and the client
+    then finds nobody at its own: that is « could not ask », never an answer,
+    and whoever does answer at a name is still held to the peer credential the
+    profile expects (article 6). The rule finds an address; it admits nobody.
+    """
+    if mode == "system":
+        root = "/var/run" if platform == "darwin" else "/run"
+        return f"{root}/sayfirst/daemon.sock"
+    runtime = environ.get("XDG_RUNTIME_DIR", "")
+    exists = directory_exists or os.path.isdir
+    if runtime and exists(runtime):
+        return f"{runtime.rstrip('/')}/sayfirst/daemon.sock"
+    return f"{home.rstrip('/')}/.sayfirst/run/daemon.sock"
 
 
 def address_bytes(path: Path | str) -> int:

@@ -167,7 +167,13 @@ def test_get_decision_requires_scope_and_answers_the_published_record() -> None:
     )
     head, document = _body(response)
     assert head.startswith(b"HTTP/1.1 200 OK\r\n")
-    assert "approval_ref" not in document
+    # A decision no approval resumed says so, rather than saying nothing: the
+    # member is rendered `null`, which is the absence article 2 asks for, and
+    # the same member carries the reference where a wait justified the decision
+    # (`test_decisions_approvals.py`, the resumed-decision case). What is never
+    # served here is the grant, which is a credential and not a record.
+    assert document["approval_ref"] is None
+    assert "grant" not in document
     jsonschema.validate(document, domain_schema("decision-record"))
     _, refused = _exchange(lambda connection: routes.read_decision("", "decision-1", connection))
     refused_head, problem = _body(refused)

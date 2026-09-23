@@ -338,3 +338,67 @@ def test_the_stub_classes_a_published_problem_as_the_registry_classes_it() -> No
     # problem that says one answered — here the fake is that control plane.
     assert spent.problem.control_plane_answered is True
     assert internal.problem.control_plane_answered is True
+
+
+def test_a_resumed_decision_does_not_reopen_the_approval_it_acted_on() -> None:
+    """Articles 3 and 12: a resolution is a record, not a wait this fake reopens.
+
+    The daemon opens a wait only where nothing still answers the question
+    (`application/decisions.py::_consult_approvals` via
+    `application/approvals.py::open_if_absent`), and its store refuses to
+    replace a reference it already keeps, "a suspension is a new record, never
+    an edit of the one before it" (`ApprovalStore.open`). So a resumed allow or
+    deny names the act it was answered from and writes no second record over
+    it.
+
+    Both halves of article 12 are driven here, each to its third ask, because
+    the second ask alone hides the fault: an approval is spent by the one
+    execution it authorised, so the question suspends again on a *new*
+    reference; a rejection answers every re-ask until the wait it ended has
+    run out, so the third ask denies as the second did. Either way the
+    original record still reads terminal, still names its person, and still
+    references the decision that opened it.
+    """
+    now = datetime(2026, 9, 4, tzinfo=UTC)
+    for name, resolution, state, resumed in (
+        ("review_approve", Resolution.APPROVE, ApprovalState.APPROVED, "allow"),
+        ("review_reject", Resolution.REJECT, ApprovalState.REJECTED, "deny"),
+    ):
+        ask = load_scenarios()[name].ask
+        stub = Stub(name, clock=lambda: now)
+        suspended = stub.ask_decision(ask)
+        assert isinstance(suspended, Answered), suspended
+        reference = suspended.value.approval_ref
+        assert reference is not None
+        assert isinstance(
+            stub.resolve_approval(ApprovalResolution("local", reference, resolution)), Answered
+        )
+
+        second = stub.ask_decision(ask)
+        assert isinstance(second, Answered), second
+        assert second.value.outcome.value == resumed, second.value
+        assert second.value.approval_ref == reference, "a resumed act names the act it spent"
+
+        original = stub.read_approval("local", reference)
+        assert isinstance(original, Answered), original
+        assert original.value.state is state, f"{name}: the act was overwritten by a new wait"
+        assert original.value.person, f"{name}: the act lost the person who took it"
+        assert original.value.decision_ref == suspended.value.decision_ref, (
+            f"{name}: the record was re-pointed at a decision that opened no wait"
+        )
+
+        third = stub.ask_decision(ask)
+        assert isinstance(third, Answered), third
+        if state is ApprovalState.REJECTED:
+            # The wait the rejection ended is still running on this clock, so
+            # it answers here exactly as it answered the second ask.
+            assert third.value.outcome.value == "deny", third.value
+            assert third.value.approval_ref == reference, third.value
+        else:
+            # Spent: one resolution authorised one execution, so the question
+            # opens a wait of its own rather than reading the act again.
+            assert third.value.outcome.value == "suspend", third.value
+            assert third.value.approval_ref != reference, third.value
+            reopened = stub.read_approval("local", reference)
+            assert isinstance(reopened, Answered), reopened
+            assert reopened.value.state is ApprovalState.APPROVED, reopened.value

@@ -33,28 +33,54 @@ dependencies. The scriptable fake is available only through the `stub` extra.
 
 ## Server conformance replay
 
-Run each server-bound scenario against a daemon instance already arranged for
-that scenario:
+Run each server-bound scenario — every row of the table above whose `binds` is
+`both` or `server` — against a daemon instance already arranged for that
+scenario:
 
 ```console
 sayfirst-conformance replay \
   --socket allow=/run/conformance/allow.sock \
   --socket deny=/run/conformance/deny.sock \
+  --socket grant_miss_after_policy_version_change=/run/conformance/grant_miss_after_policy_version_change.sock \
   --socket missing_policy=/run/conformance/missing_policy.sock \
+  --socket no_grant_on_deny=/run/conformance/no_grant_on_deny.sock \
+  --socket no_grant_without_signal_channel=/run/conformance/no_grant_without_signal_channel.sock \
+  --socket policy_unavailable_is_could_not_ask=/run/conformance/policy_unavailable_is_could_not_ask.sock \
   --socket review_approve=/run/conformance/review_approve.sock \
   --socket review_expire=/run/conformance/review_expire.sock \
-  --socket review_reject=/run/conformance/review_reject.sock
+  --socket review_reject=/run/conformance/review_reject.sock \
+  --socket strictest_rule_wins=/run/conformance/strictest_rule_wins.sock
 ```
 
-Repeat `--socket SCENARIO=PATH` for every available server scenario. A scenario
-whose implementation block has not landed must instead be named with
-`--expected-absent SCENARIO=REASON`; an absent socket without that declaration
-is failed. Client-only scenarios are reported as not applicable because their
-`binds` value does not include `server`. Every result line contains the scenario
-name, `proven`, `failed`, or `not-applicable`, and a reason. A run proves
-conformance only if every server-bound scenario is proven. A disagreement makes
-the run `failed`; an expected absence makes it `unknown`, with exit code 3, even
-when another scenario was proven.
+Name every server-bound scenario once: with `--socket SCENARIO=PATH`, or, for
+one the deployment cannot arrange a daemon for, with
+`--expected-absent SCENARIO=REASON`. A scenario named by neither has no daemon
+to replay against, and it fails. Client-only scenarios are reported as not
+applicable because their `binds` value does not include `server`. Every result
+line contains the scenario name, `proven`, `failed`, or `not-applicable`, and a
+reason, and the last line is the whole run's verdict: `proven` when every
+server-bound scenario is proven, `failed` when any one failed, and `unknown`
+when none failed and not every one was replayed — an expected absence, or a
+platform the client cannot verify a peer on — even when another scenario was
+proven. The exit status is that verdict's: `0` proven, `1` failed, `3` unknown.
+An invalid invocation replays nothing and exits `2`.
+
+The command has no way to change a daemon's policy or to move its clock, so
+three arrangements are the deployment's to make. The daemon for
+`grant_miss_after_policy_version_change` is asked the same question twice, and
+must answer the second under a policy that denies it. The daemon for
+`policy_unavailable_is_could_not_ask` must be unable to read its policy when it
+is asked; since a daemon refuses to start on a policy it cannot read, the file
+is broken after the start. And the daemons for the three that end a wait must
+serve both approval operations — the one for `review_expire` suspending with a
+wait shorter than the replay's `--deadline-wait-seconds`, and reading as
+expired as soon as that wait has passed.
+
+`sayfirstd conformance replay` is the same replay under the operator surface:
+the same options, the same whole-run line and the same exit statuses. Its
+scenario lines carry the name, the verdict and the reason; those of
+`sayfirst-conformance` add whether the scenario binds the server and how many
+expected members its verdict rests on.
 
 The default expects each per-user daemon to run as the invoking user. System
 daemon tests name its numeric account with `--expected-uid`. The client checks
@@ -71,10 +97,14 @@ is configured, the same inventory runs live and carries no absence claim.
 ## Distribution boundary
 
 The reusable replayer and its HTTP-over-Unix-socket client remain in this
-contract distribution. The client verifies the server's peer credential and
-maps failures to `impostor`, `unreachable`, and `answer_unreadable`. The
-socket client is published from `binding.http_unix_socket.client`; the replay
-harness is in the sibling `replay` module.
+contract distribution. The client verifies the server's peer credential through
+the same adapters as the transport client, `transport.peer`, and maps failures
+to `impostor`, `peer_credential_unavailable`, `unreachable`, and
+`answer_unreadable`. A platform no adapter covers is not applicable to a
+replay, and on the path a boundary asks through, `hold_decision`, it is the
+could-not-ask `peer_identity_unsupported`. The socket client is published from
+`binding.http_unix_socket.client`; the replay harness is in the sibling
+`replay` module.
 
 This repository publishes the `sayfirst-conformance` distribution, the
 `sayfirst_conformance` import package and the `sayfirst-conformance` script;
@@ -95,38 +125,3 @@ bound to the name of a surface that forwards to it. The operator surface
 `sayfirstd` is the one that reaches this operation today; the product
 command-line interface may reach it through these same modules, and no release
 of it does so yet.
-
-## Server conformance replay
-
-Run each server-bound scenario against a daemon instance already arranged for
-that scenario:
-
-```console
-sayfirstd conformance replay \
-  --socket allow=/run/conformance/allow.sock \
-  --socket deny=/run/conformance/deny.sock \
-  --socket missing_policy=/run/conformance/missing_policy.sock \
-  --socket review_approve=/run/conformance/review_approve.sock \
-  --socket review_expire=/run/conformance/review_expire.sock \
-  --socket review_reject=/run/conformance/review_reject.sock
-```
-
-Repeat `--socket SCENARIO=PATH` for every available server scenario. A scenario
-whose implementation block has not landed must instead be named with
-`--expected-absent SCENARIO=REASON`; an absent socket without that declaration
-is failed. Client-only scenarios are reported as not applicable because their
-`binds` value does not include `server`. Every result line contains the scenario
-name, `proven`, `failed`, or `not-applicable`, and a reason. A run proves
-conformance only if it has no failed scenario and at least one proven scenario.
-
-The default expects each per-user daemon to run as the invoking user. System
-daemon tests name its numeric account with `--expected-uid`. The client checks
-that identity before sending each request. `review_expire` waits 61 seconds by
-default; a test harness can inject its clock through `SocketHarness` instead.
-
-The repository acceptance suite uses the same mapping convention, reading the
-socket directory from the environment — it looks for `<scenario>.sock` there —
-and an expected numeric account from the environment when the daemon does not
-run as the test user. The block that implements the suite fixes the two
-variable names, so this document names none that nothing here reads. Until the daemon blocks land, each case is an expected absence with
-its prerequisite stated in the test result.

@@ -187,13 +187,23 @@ captured before the daemon reads a byte of the connection.
 
 ## macOS
 
-Two differences, both stated rather than hidden.
+Three differences, all stated rather than hidden.
 
 - **Access control lists on the socket's directory are not checked.** No
   reader for them exists in the standard library on that platform. The start
   line of a daemon there says `acl: not checked on this platform`, and the
   directory's mode and ownership are checked as everywhere else. The
   restoration condition is an ACL reader for macOS.
+- **On the policy's and the configuration's naming paths, a list is read only
+  as far as it can be judged.** Article 8's walk asks, of every component, who
+  could write it, and on macOS it reads the component's extended list through
+  the C library. A component with no list, and one whose list holds denials
+  only — a home folder carries one by default, `everyone deny delete` — grant
+  nobody anything the mode does not, and are judged on their mode and owner. An
+  entry that allows something is not evaluated: who it names and what it grants
+  are not read, so the answer is `unknown`, and a start on it is refused
+  (`policy_unavailable_at_start`, `acl_unreadable`). Remove the entry, or keep
+  the policy on a path without one.
 - **The overflow-id rule is vacuous there.** macOS has no user namespaces and
   no overflow ids, so nothing is read at start and no credential is ever
   refused as unmapped.
@@ -350,11 +360,21 @@ recent in memory, discards the oldest past that bound and counts what it
 discarded, and a restart loses all of it. That sink is an observation and not
 a record: no operation of this generation serves it, so it is read where the
 daemon runs and
-nowhere else. And the durable record of the act is the resumed decision on the
-chain, which carries the approval's reference and not the person. A deployment
-that must attribute an act to a named person an hour later gets that from
-`read_approval` for as long as the store keeps the wait, and from nothing this
-version writes down.
+nowhere else. And the durable record of the act is the resumed decision in
+`decisions/<scope>.jsonl`, which carries the approval's reference and not the
+person. The socket's decision read serves that reference as well, so a reader
+holding only the published surface can follow a resumed decision back to the
+wait that justified it after the wait itself is gone; the evidence chain does
+not repeat it, because an effect entry carries the `decision_position` of the
+record it is about and that record is where the reference lives. One
+consequence of serving it is the operator's to weigh, and it is the paragraph
+above read once more: a principal that may read a decision can now name the wait
+it was resumed on, and any admitted principal may `read_approval` a wait it can
+name — so admission is the boundary around who learns the person, and the
+obscurity of a reference was never a second one. A deployment that must
+attribute an act to a named person an hour later gets that from `read_approval`
+for as long as the store keeps the wait, and from nothing this version writes
+down.
 
 A system daemon must therefore admit only principals entitled to approve
 whatever any of its callers may suspend. The remedies are the two of "Who may
@@ -380,6 +400,11 @@ the life of the process. The sweep forgets a wait that ran
 out, a rejection and a spent approval, but not that one — only the execution it
 authorises being taken removes it, because discarding it at a deadline would
 throw away a person's act and ask another human for an effect already approved.
+Each of the three is forgotten one wait-length after the transition that ended
+its usefulness, and for a spent approval that transition is the **spend** and
+not the act: an approval kept for an hour and then spent stays readable for a
+wait-length from the spend, so the caller that was just granted the execution
+can still read the approval its allow names.
 So a deployment whose approved effects are never re-asked — a job that suspended,
 was approved and was then cancelled — accumulates one record per act, bounded by
 nothing but the process lifetime. Size for it, or arrange that approved waits are
@@ -390,10 +415,144 @@ their parents can forge what the chain would then confirm, so the grade a
 connection carries inspects all three stores, their parents and their actual
 files, and a caller who can write any of them is at observability grade.
 
+## A first run: `up --quickstart` and `down`
+
+For one account on one machine, the server distribution's console script starts
+a per-user daemon without a configuration being written first:
+
+```
+sayfirst-daemon up --quickstart
+sayfirst-daemon down
+```
+
+`up --quickstart` does four things, and nothing else besides taking the lock
+described below. It creates `~/.sayfirst/quickstart/` (`0700`) with an
+`evidence/` directory inside it. It writes `policy.toml` and `daemon.toml` there
+(`0600`) **if and only if they are missing** — each by an exclusive create, so a
+file that exists, edited or empty or a link, is left exactly as it is, and a
+second `up` never writes over a policy somebody changed. It starts the daemon
+detached, with its output appended to `daemon.log`, and records which process it
+started in `daemon.run.json`. And it waits until that process has **answered** a
+status request over its socket before it prints « ready »; a daemon that refuses
+to start is reported with its own refusal and its own exit status (78), and
+nothing is claimed.
+
+The daemon it starts is the one `serve` runs, started as the interpreter `up`
+itself runs under, on the server's own module —
+`python -P -m sayfirst_control_plane.cli serve --config ~/.sayfirst/quickstart/daemon.toml`,
+from `/`, in a session of its own — and never as a `sayfirst-daemon` looked up
+on a search path, which could be another installation's. A process listing
+therefore shows that interpreter and that module, and nothing named
+`sayfirst-daemon`: the pid `up` prints, which `daemon.run.json` keeps, is the
+way to it.
+
+Reading the record, starting a daemon and writing the new record happen under
+an advisory lock on `daemon.lock` (`0600`, and empty), so that two `up` or
+`down` commands run at once never both start a daemon, nor remove a record the
+other has just written. `down` holds it throughout, and `up` for everything but
+its wait for the daemon's answer. The lock is the launcher's alone: the daemon
+never takes it, and the descriptor is closed on exec, so the daemon does not
+inherit it. With it, the directory holds everything the quickstart keeps:
+`policy.toml`, `daemon.toml`, `evidence/`, `daemon.log`, `daemon.run.json` and
+`daemon.lock`.
+
+The configuration it writes is per-user, names the policy and the evidence
+directory by absolute path, and names **no socket**: the daemon serves at the
+per-user default address below, which is the one address a client given no
+`--socket` looks at. The starter policy is commented TOML for the account that
+ran the command — a rule is for the principals it names, and the format has no
+way to say « whoever runs this » — with one capability allowed, one held for a
+person, and one left unnamed so that all three outcomes can be seen.
+
+What the quickstart does **not** do: it composes nothing `serve` would not, it
+holds no policy of its own, it opens no second way in, and it claims no grade.
+The grade it prints is the daemon's answer to `status`, which for a per-user
+daemon is `observability` (article 7) — the caller can write the store.
+
+`down` stops the daemon `up` started, and only that one. The record `up` keeps
+names that process by its id, the instant the system says it began, the address
+it serves, and the policy and evidence it was started on. A process id is a
+number the system reuses, and a peer credential says which process is listening
+now, not which command started it, so it is the instant that proves an id still
+names the daemon: read from `/proc/<pid>/stat` on Linux and from the kernel's
+process table through `sysctl` on macOS, and scoped to the boot it was read on
+— the kernel's `boot_id` on Linux, the boot session's UUID on macOS — because an
+instant measured from boot repeats after a reboot. Whether the recorded id
+still names the daemon `up` started has one of three answers:
+
+- **ours**: a process runs under the id and began at the recorded instant, on
+  the recorded boot. `down` checks the instant once more and sends that process
+  one `SIGTERM` — through a `pidfd` where the kernel offers one, so an id reused
+  in between is never the one signalled — and removes the record once the
+  process has ended.
+- **gone**: nothing runs under the id — a zombie counts as nothing — or a
+  process that began at another instant, or on another boot, does. `down`
+  signals nothing and removes the record as stale.
+- **unknown**: a process runs under the id and nothing here can settle whether
+  it is the daemon: the record carries no instant, the instant cannot be read on
+  this host, or a record written without the boot shows the same instant.
+  `down` neither signals it nor removes the record, and says so; once you know
+  the process is not the daemon, remove `daemon.run.json` by hand.
+
+`up` reads the same record before it starts anything, and starts a daemon only
+over « gone » or no record at all. Over « ours » it starts nothing: the daemon
+is reported « already running » when it answers at the address it was started
+on with the recorded id, and as running but not answering otherwise. Over
+« unknown » it starts nothing either and keeps the record, because a second
+daemon would write over the only record of the first, which `down` could then
+never stop. « Already running » reports the daemon as it was started — the
+socket, policy and evidence the record kept, since the daemon reads its
+configuration once — and for each of the three that `daemon.toml` now names
+differently, a `note:` line says so and that the running daemon keeps the one
+above until it is started again (`sayfirst-daemon down`, then `up`).
+
+A daemon started by hand with `serve` is neither adopted by `up` (which reports
+the daemon's own `socket_in_use`) nor stopped by `down` (which says it did not
+start it, and exits 1). Nothing is ever looked up by process name, and `down`
+never escalates past `SIGTERM`: a daemon killed outright leaves its evidence
+epoch open.
+
+**What `up` and `down` exit with.** `up` exits `0` when a daemon is ready or
+already running. It exits `78`, the status of a start the daemon refuses, for a
+refusal of its own, written `quickstart: …` — run as root;
+`~/.sayfirst/quickstart/` or its `evidence/` that cannot be created, or that is
+not a directory, belongs to another account or can be reached by other
+accounts; a `daemon.toml` that configures system mode — and for a `daemon.toml`
+the daemon's own reader refuses, written as the daemon writes it,
+`reason: detail`. When the daemon it started ends before it has answered, `up`
+exits with that daemon's status — `78` for a start the daemon refuses, its
+`reason: detail` copied from `daemon.log` — or `1` when the daemon ended without
+a failing status of its own. It exits `1` as well when it started nothing over a
+record (above), when the record of a daemon it started could not be written, and
+when the daemon did not answer within 20 seconds; each of those says on standard
+error what was left running, if anything, and by which pid. `down` exits `0`
+when it stopped the daemon or found nothing to stop, and `1` when it left
+something running: a control plane it did not start, a process it cannot prove
+is its daemon, or a daemon that has not ended 20 seconds after its `SIGTERM`. An
+invocation the command does not accept — `up` without `--quickstart`, `--config`
+given to `up` or `down` — is a usage error, `2`.
+
+### The default address
+
+A deployment that names no `socket.path` is served at the default address of its
+mode: in per-user mode `$XDG_RUNTIME_DIR/sayfirst/daemon.sock` where that
+variable names a directory that exists, and `~/.sayfirst/run/daemon.sock`
+otherwise; in system mode `/run/sayfirst/daemon.sock` (`/var/run` on macOS). The
+rule is published by the contract distribution, so that a client reads the same
+function the daemon does instead of a copy of it. A per-user client given no
+`--socket` — the product client's verbs, `sayfirstd status`, `sayfirstd whoami` —
+looks at that one name and at nothing else, and whoever answers there is still held to the
+peer credential the profile expects. Both ends read their **own** environment:
+a daemon started where the runtime variable is unset and a client run where it
+is set compute two names, and the client then reports « could not ask », naming
+the address it looked at. A system profile is never given a default; it names
+its socket and the account the daemon runs as.
+
 ## Starting the daemon
 
-The daemon is started by the server distribution's own console script, which is
-a different binary from the operator surface above:
+Everywhere else — under a supervisor, in system mode, on a configuration of
+your own — the daemon is started in the foreground by the same console script,
+which is a different binary from the operator surface above:
 
 ```
 sayfirst-daemon serve --config /etc/sayfirst/daemon.toml

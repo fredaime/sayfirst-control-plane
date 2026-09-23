@@ -238,7 +238,13 @@ def test_restart_derives_no_resolution_for_a_suspended_decision(composed) -> Non
     assert status == 200, read
     assert read["outcome"] == "suspend"
     assert read["reason"] == "policy_requires_review"
-    assert "approval_ref" not in read or read["approval_ref"] is None
+    # What a restart loses is the wait, not the record of which wait it was.
+    # The store a suspension waits in is in memory and is gone; the reference
+    # the suspended decision names is durable, and it is what a reader follows
+    # to learn that this decision was suspended on a wait nobody answered
+    # (`docs/deployment.md`, « What a restart loses »).
+    assert read["approval_ref"] == decision["approval_ref"]
+    assert read["approval_ref"] is not None
 
 
 def test_policy_changed_while_down_is_reread_and_projection_rebuilt(composed) -> None:

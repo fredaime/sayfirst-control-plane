@@ -6,7 +6,6 @@ from __future__ import annotations
 import http.client
 import json
 import socket
-import struct
 import sys
 from collections.abc import Callable, Iterator, Mapping
 from dataclasses import dataclass, field
@@ -31,6 +30,11 @@ from ...problems import (
 )
 from ...replay import ScenarioNotApplicable
 from ...status import Status
+from ...transport.peer import (
+    PeerCredentialUnavailable,
+    PeerIdentityUnsupported,
+    select_peer_identity,
+)
 from ...whoami import WhoAmI
 from .routes import DOCUMENT_MEDIA_TYPE, STREAM_MEDIA_TYPE
 
@@ -39,22 +43,30 @@ class _UnexpectedPeer(OSError):
     pass
 
 
+class _NoPeerCredential(Exception):
+    """The kernel gave no identity for the far end, so it cannot be compared to anything."""
+
+
 class UnsupportedPlatform(ScenarioNotApplicable):
     """Peer identity cannot be verified on this operating system."""
 
 
 def _peer_uid(peer: socket.socket) -> int:
-    if sys.platform.startswith("linux") and hasattr(socket, "SO_PEERCRED"):
-        size = struct.calcsize("3i")
-        _, uid, _ = struct.unpack(
-            "3i", peer.getsockopt(socket.SOL_SOCKET, socket.SO_PEERCRED, size)
-        )
-        return uid
-    getpeereid = getattr(peer, "getpeereid", None)
-    if getpeereid is not None:
-        uid, _ = getpeereid()
-        return int(uid)
-    raise UnsupportedPlatform("peer identity is unsupported on this platform")
+    """The uid the kernel reports for the far end, read by the contract's own adapters.
+
+    One reading of a peer's identity for both clients of this contract. This one
+    used to read it for itself and knew one platform: on macOS, where the
+    transport client verified peers, every governed effect ended in an exception
+    that is none of the boundary's four outcomes.
+    """
+    try:
+        adapter = select_peer_identity(sys.platform)
+    except PeerIdentityUnsupported as error:
+        raise UnsupportedPlatform(str(error)) from error
+    try:
+        return adapter.establish(peer).uid
+    except PeerCredentialUnavailable as error:
+        raise _NoPeerCredential(str(error)) from error
 
 
 class _UnixConnection(http.client.HTTPConnection):
@@ -296,6 +308,8 @@ class SocketClient:
             )
         except _UnexpectedPeer as exc:
             return _client_problem(ProblemCode.IMPOSTOR, str(exc))
+        except _NoPeerCredential as exc:
+            return _client_problem(ProblemCode.PEER_CREDENTIAL_UNAVAILABLE, str(exc))
         except UnsupportedPlatform:
             raise
         except OSError as exc:
@@ -468,9 +482,16 @@ class SocketClient:
         except _UnexpectedPeer as exc:
             connection.close()
             return _client_problem(ProblemCode.IMPOSTOR, str(exc)), None
-        except UnsupportedPlatform:
+        except _NoPeerCredential as exc:
             connection.close()
-            raise
+            return _client_problem(ProblemCode.PEER_CREDENTIAL_UNAVAILABLE, str(exc)), None
+        except UnsupportedPlatform as exc:
+            # The one caller of this method is a boundary, whose outcomes are four and
+            # closed: a platform it cannot verify a peer on is a question it could not
+            # ask, said as the contract says it. The conformance replay, which reads a
+            # platform like that as « not applicable », goes through `_request` above.
+            connection.close()
+            return _client_problem(ProblemCode.PEER_IDENTITY_UNSUPPORTED, str(exc)), None
         except OSError as exc:
             connection.close()
             return (
@@ -500,7 +521,16 @@ class SocketClient:
             connection.close()
             return result, None  # type: ignore[return-value]
         held = frame.get("grant")
-        grant = Grant.from_document(held) if isinstance(held, Mapping) else None
+        try:
+            grant = Grant.from_document(held) if isinstance(held, Mapping) else None
+        except (KeyError, TypeError, ValueError) as exc:
+            # Part of the answer does not read, so none of it is acted on: the
+            # connection is given up and the question is one that was not answered.
+            connection.close()
+            return (
+                _client_problem(ProblemCode.ANSWER_UNREADABLE, f"the grant does not read: {exc}"),
+                None,
+            )
         return result, GrantChannel(grant, response, connection)  # type: ignore[return-value]
 
     def read_approval(self, scope: str, approval_ref: str) -> Result[Approval]:

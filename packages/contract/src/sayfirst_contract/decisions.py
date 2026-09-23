@@ -98,8 +98,11 @@ class Decision:
             else None,
             # Optional on both documents that carry a decision: `decision-result`
             # lists it without requiring it, and `decision-record` — what a read
-            # back gives — does not list it at all, and the daemon drops it before
-            # rendering one. A reader that required it could read no record.
+            # back gives — does not list it but admits members it does not list.
+            # The daemon serves it on a read back too: the wait a suspension is
+            # on, or the one a resumed decision was taken on, and `null` where
+            # no wait took part. A reader that required it could read no record
+            # from a server that leaves it out.
             approval_ref=document["approval_ref"]
             if isinstance(document.get("approval_ref"), str)
             else None,

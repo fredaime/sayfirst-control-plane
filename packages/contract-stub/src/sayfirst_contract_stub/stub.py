@@ -257,7 +257,16 @@ class Stub:
         )
         self._decisions.append(decision)
         self._record(decision)
-        if approval_ref is not None:
+        if outcome is Outcome.SUSPEND:
+            # A wait is opened by a *suspension*, never by the mere presence of
+            # a reference: a resumed allow or deny names the act it was
+            # answered from, and writing a fresh pending record under that
+            # reference would edit a person's act into a wait nobody opened
+            # (article 3). The daemon's store is explicit about it — a
+            # reference it already keeps is refused rather than replaced,
+            # `ApprovalStore.open` — and it reaches that store only where
+            # nothing still answered the question.
+            assert approval_ref is not None, "a suspension names the wait it opened"
             approval = Approval(
                 approval_ref=approval_ref,
                 decision_ref=decision_ref,

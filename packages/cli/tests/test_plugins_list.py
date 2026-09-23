@@ -123,7 +123,7 @@ def test_plugins_list_renders_empty_observation_as_an_explicit_empty_result() ->
 def test_the_surface_depends_on_the_contract_and_never_on_the_server() -> None:
     with (SURFACE_ROOT / "pyproject.toml").open("rb") as stream:
         project = tomllib.load(stream)["project"]
-    assert project["dependencies"] == ["sayfirst-contract==0.2.0"]
+    assert project["dependencies"] == ["sayfirst-contract==0.3.0"]
 
     imports: set[str] = set()
     for path in (SURFACE_ROOT / "src" / "sayfirstd").rglob("*.py"):
@@ -252,12 +252,17 @@ def test_plugins_list_refuses_a_composition_entry_without_the_chain_shape(
     del entry[member]
     record.write_text(json.dumps(entry), encoding="utf-8")
 
-    with pytest.raises(ValueError, match=f"missing members: {member}"):
+    errors = StringIO()
+    assert (
         main(
             ["plugins", "list", "--composition", str(record)],
             entry_points=[],
             stdout=StringIO(),
+            stderr=errors,
         )
+        == 64
+    )
+    assert f"missing members: {member}" in errors.getvalue()
 
 
 def test_plugins_list_refuses_an_evidence_entry_that_is_not_a_composition(
@@ -268,12 +273,17 @@ def test_plugins_list_refuses_an_evidence_entry_that_is_not_a_composition(
     entry["kind"] = "decision"
     record.write_text(json.dumps(entry), encoding="utf-8")
 
-    with pytest.raises(ValueError, match="not a composition"):
+    errors = StringIO()
+    assert (
         main(
             ["plugins", "list", "--composition", str(record)],
             entry_points=[],
             stdout=StringIO(),
+            stderr=errors,
         )
+        == 64
+    )
+    assert "not a composition" in errors.getvalue()
 
 
 def test_plugins_list_never_reports_as_composed_a_selection_bootstrap_refuses(
@@ -482,3 +492,51 @@ interface_version = {toml_version}
         "PROVIDER\tDISCOVERED\tCONFIGURED FOR\tINTERFACE VERSION\tCOMPOSED",
         "none\tno\tPrivacyRedactor (refused: unsupported version)\trefused\tno",
     ]
+
+
+def test_plugins_list_reads_a_configuration_that_names_no_plugins(tmp_path: Path) -> None:
+    """A daemon configuration without a plugins table selects none, and runs on the defaults.
+
+    The quickstart's own `daemon.toml` is one. It used to end this command in a
+    traceback, because the shared reader demanded the table.
+    """
+    config = tmp_path / "daemon.toml"
+    config.write_text('[socket]\nmode = "per_user"\n', encoding="utf-8")
+    output = StringIO()
+    assert main(["plugins", "list", "--config", str(config)], entry_points=[], stdout=output) == 0
+    assert output.getvalue().splitlines()[0].startswith("PROVIDER\tDISCOVERED")
+
+
+def test_plugins_list_refuses_a_configuration_that_does_not_read(tmp_path: Path) -> None:
+    """A file named on the command line that does not read is the caller's misuse, said once."""
+    config = tmp_path / "daemon.toml"
+    config.write_text("[plugins\n", encoding="utf-8")
+    errors = StringIO()
+    code = main(
+        ["plugins", "list", "--config", str(config)],
+        entry_points=[],
+        stdout=StringIO(),
+        stderr=errors,
+    )
+    assert code == 64
+    assert str(config) in errors.getvalue()
+    assert "Traceback" not in errors.getvalue()
+
+
+def test_the_refusal_names_the_file_that_did_not_read(tmp_path: Path) -> None:
+    config = tmp_path / "daemon.toml"
+    config.write_text("[plugins\n", encoding="utf-8")
+    record = tmp_path / "composition.json"
+    record.write_text(
+        json.dumps(_composition_record(("none", "PrivacyRedactor", 1))), encoding="utf-8"
+    )
+    errors = StringIO()
+    code = main(
+        ["plugins", "list", "--config", str(config), "--composition", str(record)],
+        entry_points=[],
+        stdout=StringIO(),
+        stderr=errors,
+    )
+    assert code == 64
+    assert str(config) in errors.getvalue()
+    assert str(record) not in errors.getvalue()
