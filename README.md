@@ -67,17 +67,18 @@ conservative one. [`SECURITY.md`](SECURITY.md) states all three.
 ## Install
 
 ```console
-$ uvx --from sayfirst-cli==0.2.0 sayfirst --help
+$ uvx --from sayfirst-cli==0.3.0 sayfirst --help
 usage: sayfirst [-h]
                 {ask,trace,explain,evidence,approvals,instrument,packs} ...
 ```
 
-Seven verbs; `uv tool install sayfirst-cli==0.2.0` keeps them on your path.
-On the index today: `sayfirst-cli`, `sayfirst-contract`, `sayfirst-boundary`,
-`sayfirst-contract-stub`, `sayfirst-conformance`. The daemon
-(`sayfirst-control-plane`), its operator surface (`sayfirstd`) and the port
-conformance kit (`sayfirst-testing`) are **publishing**; until they land, run
-them from a checkout of this repository:
+Seven verbs; `uv tool install sayfirst-cli==0.3.0` keeps them on your path.
+Every distribution is on the index at 0.3.0: the client `sayfirst-cli`, and
+from this repository the daemon (`sayfirst-control-plane`), its operator
+surface (`sayfirstd`), the contract (`sayfirst-contract`), the boundary
+(`sayfirst-boundary`), the contract's fake (`sayfirst-contract-stub`) and the
+two conformance kits (`sayfirst-conformance`, `sayfirst-testing`). A checkout
+of this repository runs them too:
 `uv sync --frozen --all-packages && uv run --frozen sayfirst-daemon --help`.
 
 ## Try it in three commands
@@ -136,9 +137,9 @@ The client's
 walks the whole of it: an allow, a denial by changing one word of the policy, a
 suspension and the person who ends it, the proof, and the chain read back. Every
 command on it was run, in that order, before it was written down. Those three
-commands are those of the release **after 0.2.0**, and the daemon is not on the
-index yet (the section above); until then they run from checkouts, as that page
-says. A deployment of your own goes on using `sayfirst-daemon serve --config`
+commands are those of 0.3.0, and every distribution they install is on the
+index (the section above). A deployment of your own goes on using
+`sayfirst-daemon serve --config`
 under its own supervisor — [`docs/deployment.md`](docs/deployment.md).
 
 ## What you get
