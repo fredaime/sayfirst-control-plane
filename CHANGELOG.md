@@ -8,6 +8,93 @@ that this file does not announce under its own release fails the packaging test.
 
 ## Unreleased
 
+## 0.3.0
+
+- **`sayfirst-daemon up --quickstart` and `sayfirst-daemon down`.** `up --quickstart` writes a
+  commented starter policy and a per-user configuration under `~/.sayfirst/quickstart/` when they
+  are not there — by an exclusive create, so a file that exists is never written over — starts
+  this same daemon detached, and says « ready » only once that daemon has answered a status
+  request; a daemon that refuses to start is reported with its own refusal and its own status.
+  `down` stops the daemon `up` started and no other: it signals a process only when the start
+  instant the system reports for the recorded id, on the boot it was recorded on, is the one `up`
+  recorded (next entry). `serve` is unchanged and is still what the command does when it is given
+  no verb: the two verbs live in a package of their own, `sayfirst_quickstart`, which the console
+  script now names and which hands `serve` to the server's own command line untouched — the
+  server imports nothing from it, and nothing it writes enters the server's information contract.
+  The quickstart claims no grade: the one it prints is the daemon's answer to `status`.
+- **The quickstart's proof of identity has three answers, on Linux and on macOS.** Whether the id
+  `up` recorded still names the daemon it started is read from that process's start instant,
+  scoped to the boot it was read on: `/proc` and the kernel's boot id on Linux, the process table
+  and the boot session's UUID through `sysctl` on macOS. The answer is ours, gone or unknown.
+  `down` signals only ours; it removes the record of a process that is gone, and keeps the record
+  of a living process it cannot prove, signalling nothing and exiting `1`. `up` starts nothing
+  over such a process either, and keeps its record: a second daemon would write over the only
+  record of the first. A daemon already running is reported with the socket, policy and evidence
+  it was started on, and a `note:` line for each of them `daemon.toml` now names differently.
+- **The boundary stamps a per-run correlation when it is given one.** `Boundary` takes an optional `correlation` and puts it on every ask, which the plane already records on the effect (`correlation_source: boundary_supplied`). The verifier (in the client distribution) sets it, so a governed run's records — which span one connection per grant — are told to be one run's by that token rather than by a shared connection. Additive; a boundary given none behaves exactly as before, and the correlation is not part of a grant's key. The contract generation is unchanged at one.
+- **The default local address is the contract's rule.** `default_socket_path` moved from the
+  server into `sayfirst_contract.binding.http_unix_socket.addresses`, and the server re-exports
+  that same function, so a client can read the rule instead of being handed an address. Additive
+  in Python and unchanged on the wire; the contract generation is unchanged at one.
+- **`sayfirstd status` and `sayfirstd whoami` take `--socket` as an option.** A per-user profile
+  given none is looked for at the per-user default address — `profile_address`, published beside
+  the profile it completes — and a failure there names the address nobody typed. A system profile
+  is never given one (`64`). **What changes for a caller:** an invocation with no `--socket` used
+  to end as a usage error (`2`); it now asks, and answers « could not ask » (`4`) when nobody is
+  there.
+- **The client a boundary holds its grants through verifies a peer as the transport client
+  does.** It read the far end's identity for itself and knew Linux alone, so on macOS every
+  governed effect ended in `UnsupportedPlatform`, an exception that is none of the boundary's four
+  outcomes. It now reads identity through the contract's shared adapters (`transport.peer`), and
+  the two clients report the same problem codes. **What changes for a caller:** a governed program
+  runs on macOS; a credential the kernel does not give is `peer_credential_unavailable`; on the
+  path a boundary asks through (`SocketClient.hold_decision`), a platform no adapter covers is the
+  could-not-ask `peer_identity_unsupported` rather than an exception, while a conformance replay
+  still reports such a platform as not applicable; and a grant that does not read is
+  `answer_unreadable`, its connection closed, instead of the parser's own `KeyError` or
+  `ValueError`.
+- **`Boundary(hold_grants=False)`, and the questions a boundary cannot ask are outcomes.** A
+  boundary built with `hold_grants=False` asks the control plane for every act and holds no
+  grant: a verifier's proof is one recorded decision for each effect it saw, and a grant hit
+  records nothing. The default is unchanged. **What changes for a caller:** arguments the digest
+  cannot describe — a path that is not UTF-8, a NaN, an object JSON cannot carry — are
+  `CouldNotAsk` with `retryable=False`, and the body does not run, where they escaped as a bare
+  encoding, value or type error; `CouldNotAsk.retryable` can be `None`, the contract's « cannot
+  say » for a request that may have been received and acted on, which used to be rounded to
+  `False`; and an allow whose grant the boundary cannot hold — its signal reader did not start —
+  runs the act on the answer given and closes the connection, so the next identical act asks
+  again, where the failure escaped with the connection left open.
+- **A connection can be bounded, a socket that cannot be made is an answer, and a named address
+  is absolute.** `connect` (`sayfirst_contract.transport.socket_client`) takes an optional
+  `timeout`, in seconds, that bounds every step of a connection — the connect, the peer
+  credential, each read and write — and a step past it is `unreachable`; the default is still no
+  bound. **What changes for a caller:** a socket that cannot be made (a process out of
+  descriptors, say) is `unreachable` rather than the operating system's own error; and
+  `profile_address` makes a named address absolute once, against the directory the command ran
+  in, where a relative name was resolved again on every connection — so a governed program that
+  changed directory could be answered, peer check passed, by another daemon of the same account
+  serving that name there.
+- **On macOS a daemon given a policy file starts.** Article 8's access walk read each component's
+  extended list as one it could not evaluate whenever macOS answered « no list » (no list and
+  `ENOENT`), so every policy there was `unknown` and the start refused (`policy_unavailable_at_start`,
+  `acl_unreadable`); it also read a symlink's list through the link, which is how `/tmp` failed.
+  No list, and a list of denials only — a home folder's default — now grant nothing beyond the
+  mode, a link's list is not read (its target is walked in its own chain), and an entry that allows
+  something is still not evaluated and still refuses. **What changes for a caller:** a per-user
+  daemon, the quickstart's included, starts on macOS with its policy under the home folder.
+- **`sayfirstd conformance replay` says the run's own verdict.** The last line is the report's
+  verdict — `proven`, `failed` or `unknown` — with exit status `0`, `1` or `3`, as
+  `sayfirst-conformance` gives; an invalid invocation replayed nothing, says `unknown`, and exits
+  `2`. **What changes for a caller:** a run in which nothing failed but not every server-bound
+  scenario was replayed — an expected absence, say — printed `run failed` and exited `1`; it
+  prints `run unknown` and exits `3`. An invalid invocation printed `run failed`.
+- **`sayfirstd plugins list` reads a configuration without plugins, and refuses a file it cannot
+  read.** A daemon configuration with no `plugins` table — the quickstart's `daemon.toml` is one
+  — selects nothing, and is listed so. **What changes for a caller:** such a configuration ended
+  the command in a traceback. A file named with `--config` or `--composition` that does not read
+  — absent, not TOML, not the shape it must have — ended in a traceback and status `1`; it is
+  one line on standard error naming the file and the reason, with status `64`.
+
 - The publication checklist carries every act the constitution names, in the order
   they are performed, and a guard fails when one of them stops being a line of it.
 

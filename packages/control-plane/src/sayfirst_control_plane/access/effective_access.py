@@ -10,6 +10,7 @@ import os
 import stat
 import struct
 import sys
+from functools import cache
 from pathlib import Path
 from typing import Final
 
@@ -112,8 +113,10 @@ def _extend(absolute: Path, chains: list[tuple[Path, ...]], links: int) -> None:
 
 def _acl(path: Path) -> tuple[tuple[int, int, int], ...]:
     if sys.platform == "darwin":
-        if _macos_acl_present(path):
-            raise _AclUnreadable("macOS access-control list presence cannot be evaluated")
+        if darwin_acl_allows(path, _darwin_library()):
+            raise _AclUnreadable(
+                "a macOS access-control list that allows something is not evaluated"
+            )
         return ()
     try:
         raw = os.getxattr(path, "system.posix_acl_access", follow_symlinks=False)
@@ -129,7 +132,31 @@ def _acl(path: Path) -> tuple[tuple[int, int, int], ...]:
     return tuple(struct.unpack_from("<HHI", raw, offset) for offset in range(4, len(raw), 8))
 
 
-def _macos_acl_present(path: Path) -> bool:
+def _acl_unless_a_link(path: Path, metadata: os.stat_result) -> tuple[tuple[int, int, int], ...]:
+    """A component's access list, and none for a link, whose list is never read.
+
+    Both walks give a link nothing of its own — what could replace it is the
+    directory one component up, and what it names is walked in its own chain,
+    list included. Reading its list anyway was not neutral: macOS reads it
+    through the link and can fail there, and it did on `/tmp`, which is a link
+    on that system, so a policy below it was an `unknown` and the start refused.
+    """
+    if stat.S_ISLNK(metadata.st_mode):
+        return ()
+    return _acl(path)
+
+
+#: The macOS constants the reader passes and compares (`<sys/acl.h>`).
+ACL_TYPE_EXTENDED: Final[int] = 0x00000100
+ACL_FIRST_ENTRY: Final[int] = 0
+ACL_NEXT_ENTRY: Final[int] = -1
+ACL_EXTENDED_ALLOW: Final[int] = 1
+ACL_EXTENDED_DENY: Final[int] = 2
+
+
+@cache
+def _darwin_library() -> ctypes.CDLL:
+    """The C library's four access-list calls, declared once."""
     library_name = ctypes.util.find_library("c")
     if library_name is None:
         raise _AclUnreadable("C library cannot be found for access-control-list inspection")
@@ -142,15 +169,44 @@ def _macos_acl_present(path: Path) -> bool:
         ctypes.POINTER(ctypes.c_void_p),
     )
     library.acl_get_entry.restype = ctypes.c_int
+    library.acl_get_tag_type.argtypes = (ctypes.c_void_p, ctypes.POINTER(ctypes.c_int))
+    library.acl_get_tag_type.restype = ctypes.c_int
     library.acl_free.argtypes = (ctypes.c_void_p,)
-    acl = library.acl_get_file(os.fsencode(path), 0x00000100)
+    return library
+
+
+def darwin_acl_allows(path: Path, library: object) -> bool:
+    """Whether a component's macOS extended list holds an entry that allows anything.
+
+    Three answers, and only the third is left unevaluated. **No list:** macOS
+    answers an object that has none with no list and `ENOENT` — so `ENOENT` for
+    an object that is there is « no list », and for one that is not, a failure.
+    **Denials only:** a denial takes a right away and grants none, and both
+    walks ask who could write, so a list of denials changes nothing they answer;
+    a home folder carries one by default (`everyone deny delete`). **Anything
+    else** — an allowing entry, or an entry of a kind this reader does not know
+    — would need who it names and what it grants read, which nothing here does,
+    so it is reported as allowing and the caller calls the answer unknown.
+    """
+    acl = library.acl_get_file(os.fsencode(path), ACL_TYPE_EXTENDED)  # type: ignore[attr-defined]
     if not acl:
-        raise _AclUnreadable("macOS access-control list cannot be inspected")
+        failure = ctypes.get_errno()
+        if failure == errno.ENOENT and os.path.lexists(path):
+            return False
+        raise _AclUnreadable(f"macOS access-control list cannot be inspected: errno {failure}")
     try:
         entry = ctypes.c_void_p()
-        return library.acl_get_entry(acl, 0, ctypes.byref(entry)) == 0
+        which = ACL_FIRST_ENTRY
+        while library.acl_get_entry(acl, which, ctypes.byref(entry)) == 0:  # type: ignore[attr-defined]
+            tag = ctypes.c_int()
+            if library.acl_get_tag_type(entry, ctypes.byref(tag)) != 0:  # type: ignore[attr-defined]
+                raise _AclUnreadable("an entry of a macOS access-control list cannot be read")
+            if tag.value != ACL_EXTENDED_DENY:
+                return True
+            which = ACL_NEXT_ENTRY
+        return False
     finally:
-        library.acl_free(acl)
+        library.acl_free(acl)  # type: ignore[attr-defined]
 
 
 def _acl_writers(
@@ -207,7 +263,7 @@ def _write_access_along(
     for depth, component in enumerate(components):
         try:
             metadata = component.lstat()
-            entries = _acl(component)
+            entries = _acl_unless_a_link(component, metadata)
         except OSError as exc:
             reason = "acl_unreadable" if isinstance(exc, _AclUnreadable) else "stat_failed"
             return AccessVerdict(AccessState.UNKNOWN, component, f"{reason}: {exc}")
@@ -274,7 +330,7 @@ def _protection_along(
     for depth, component in enumerate(components):
         try:
             metadata = component.lstat()
-            entries = _acl(component)
+            entries = _acl_unless_a_link(component, metadata)
         except OSError as exc:
             reason = "acl_unreadable" if isinstance(exc, _AclUnreadable) else "stat_failed"
             return ProtectionVerdict(ProtectionState.UNKNOWN, component, reason)

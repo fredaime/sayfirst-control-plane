@@ -1,11 +1,11 @@
 # SPDX-License-Identifier: Apache-2.0
 [project]
 name = "sayfirst-control-plane"
-version = "0.2.0"
+version = "0.3.0"
 description = "The host-scoped open control plane"
 readme = "README.md"
 requires-python = ">=3.12,<3.15"
-dependencies = ["sayfirst-contract==0.2.0"]
+dependencies = ["sayfirst-contract==0.3.0"]
 license = "Apache-2.0"
 
 authors = [{ name = "fredaime", email = "frederic.aime@gmail.com" }]
@@ -17,19 +17,22 @@ classifiers = [
   "Programming Language :: Python :: 3.14",
 ]
 
-# The public repository this distribution sends a reader to. It does not exist
-# yet: article 0 creates it fresh in the act that publishes, and these are the
-# names the operator chose for that act. `tests/test_pointers_survive_publication.py`
-# holds them, so a rename lands in every project file and in the guard together
-# or not at all. No licence classifier: the licence is declared as an expression
-# above, and an index refuses a distribution that carries both.
+# The public repository this distribution sends a reader to. It was created
+# fresh, as article 0 asks, in the act that published it on 2026-09-17, under
+# the name the operator chose. `tests/test_pointers_survive_publication.py`
+# holds these URLs, so a rename lands in every project file and in the guard
+# together or not at all. No licence classifier: the licence is declared as an
+# expression above, and an index refuses a distribution that carries both.
 [project.urls]
 Repository = "https://github.com/fredaime/sayfirst-control-plane"
 Documentation = "https://github.com/fredaime/sayfirst-control-plane/blob/main/packages/control-plane/README.md"
 Changelog = "https://github.com/fredaime/sayfirst-control-plane/blob/main/CHANGELOG.md"
 
 [project.scripts]
-sayfirst-daemon = "sayfirst_control_plane.cli:main"
+# The front that stands before the daemon's own command line: it hands `serve`
+# to `sayfirst_control_plane.cli`, untouched, and adds `up --quickstart` and
+# `down`. The server imports nothing from it (its own package guard holds that).
+sayfirst-daemon = "sayfirst_quickstart.command:main"
 
 [project.entry-points."sayfirst.plugins"]
 none = "sayfirst_control_plane.plugins.defaults:NO_OP_PRIVACY_REGISTRATION"
@@ -43,7 +46,7 @@ build-backend = "hatchling.build"
 sayfirst-contract = { workspace = true }
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/sayfirst", "src/sayfirst_control_plane"]
+packages = ["src/sayfirst", "src/sayfirst_control_plane", "src/sayfirst_quickstart"]
 
 [tool.hatch.build.targets.sdist.force-include]
 "../../LICENSE" = "LICENSE"

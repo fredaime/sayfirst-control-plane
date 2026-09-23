@@ -177,6 +177,16 @@ class ApprovalStore:
     allow on one person's act. Between them they are why « one resolution
     authorises one execution » is a property and not a hope.
 
+    A third exists because a wait is kept before anybody has been told about
+    it. `publish` is the transition from « this ask's » to « everybody's »: a
+    wait is opened when the core mints it, so that no second wait is opened
+    over it, and published when its provider has taken it up and the suspended
+    decision naming it is committed. An unpublished wait answers no reader and
+    no other ask, and `abandon` — the only way a wait leaves this store other
+    than lapsing — refuses a published one. Without that boundary a second ask
+    was answered a wait the first was still opening, committed a suspension
+    naming it, and watched the first ask abandon it.
+
     A lock, because the daemon serves more than one connection and every other
     in-memory authority here holds one.
     """
@@ -215,7 +225,19 @@ class ApprovalStore:
         A reference already kept in that scope is refused rather than replaced:
         a suspension is a new record, never an edit of the one before it
         (article 3).
+
+        Opening is not publishing. The record is kept so that no second wait is
+        opened over it, and it stays the opening ask's until `publish` says
+        otherwise: nobody else is answered with it, and the ask that opened it
+        may still withdraw it (`abandon`). A caller handing in a record that
+        already claims to be published is refused, because publication is a
+        transition this store makes and not a fact a caller asserts.
         """
+        if approval.published:
+            raise ValueError(
+                "an approval is opened unpublished: publication is the store's transition, "
+                "taken once the provider has the wait and its decision is committed"
+            )
         if approval.state is not ApprovalState.PENDING:
             raise ValueError(
                 f"only a pending approval can be opened, not a {approval.state.value} one"
@@ -264,7 +286,9 @@ class ApprovalStore:
         deadline would discard a person's act the caller is still entitled to
         spend. Claimed is the fourth thing and the same rule as consumed, one
         step earlier: an execution another ask is about to take is not one this
-        question can be answered with.
+        question can be answered with. Unpublished is the fifth and the same
+        rule again, one step earlier still: a wait another ask is in the middle
+        of opening is not one this question can be answered with either.
         """
         with self._lock:
             return self._newest_live(question, self.clock(), in_flight=False)
@@ -280,43 +304,83 @@ class ApprovalStore:
         opening is. So the look and the open are one operation here, and a
         question has at most one wait somebody could still resolve (article 3).
 
-        An approval another ask has **claimed** counts as one this question
-        already has, and is answered rather than shadowed by a new wait. It is
-        in flight, not gone: the ask holding it either records the allow it
-        authorises or gives it back, and a wait opened over it would be newer
-        than a person's act and would hide that act from every later ask. What
-        the caller does with an answer it cannot claim is the caller's rule —
-        this store only refuses to lose it.
+        An approval another ask has **claimed**, and a wait another ask is
+        still **opening**, both count as ones this question already has, and
+        are answered rather than shadowed by a new wait. Each is in flight, not
+        gone: the ask holding it either finishes with it or lets it go, and a
+        wait opened over it would be newer than the thing it hid. What the
+        caller does with an answer it may not use is the caller's rule — this
+        store only refuses to lose it, and `DecisionService` answers an
+        unpublished wait as contention rather than as a suspension of its own.
 
         The answer says which happened: a returned approval whose reference is
-        not the one handed in is the one that was already there.
+        not the one handed in is the one that was already there, and its
+        `published` says whether it is one this caller may be answered with.
         """
         with self._lock:
             found = self._newest_live(approval.question, self.clock(), in_flight=True)
             return self.open(approval) if found is None else found
 
-    def abandon(self, scope: str, approval_ref: str) -> Approval:
-        """Drop a wait the ask that opened it could not use, from both indexes.
+    def publish(self, scope: str, approval_ref: str) -> Approval:
+        """Hand a wait over from the ask that opened it to everybody else.
 
-        One caller and one moment: the ask that just opened a wait, whose
-        provider then refused to take it up, so no decision names this wait and
-        nobody has been told to answer it. Leaving it would be worse than
-        untidy — the ask's own retry would find it pending, answer `suspend`
-        on it and never put the request to the provider again, so a provider
-        failure would come back as a wait that provider never received
-        (articles 2 and 12).
+        The other half of `open`, and the instant a reference stops being one
+        ask's private business. The caller is the ask that minted the wait, and
+        it calls this when both halves of a published suspension are true: the
+        provider has taken the request up, and the suspended decision naming
+        this wait is committed — or may be, which article 3 reads as committed.
 
-        Pending and unclaimed, checked here rather than trusted: a wait
-        somebody could be resolving, or an execution another ask holds, is not
-        this ask's to drop.
+        From here the wait answers a re-ask of its question, a person may act on
+        it, and no ask may withdraw it. Before here it answers nobody: a second
+        ask that was handed it would publish a reference to a wait the opening
+        ask could still abandon, behind a decision of its own that stayed
+        committed.
+
+        Idempotent, and only over a wait still pending: a resolved one was
+        published by the act that resolved it, and a lapsed one is over.
         """
         with self._lock:
             kept = self.read(scope, approval_ref)
-            if kept.state is not ApprovalState.PENDING or kept.claimed:
+            if kept.state is not ApprovalState.PENDING:
+                raise ValueError(
+                    f"approval {approval_ref!r} is {kept.state.value}: only an open wait "
+                    "is published, and a wait a person answered was published by that act"
+                )
+            if kept.published:
+                return kept
+            published = replace(kept, published=True)
+            self._by_reference[(scope, approval_ref)] = published
+        return published
+
+    def abandon(self, scope: str, approval_ref: str) -> Approval:
+        """Drop a wait the ask that opened it could not use, from both indexes.
+
+        One caller and one moment: the ask that just opened a wait, which then
+        could not publish it — its provider refused to take the wait up, or the
+        decision authority refused the suspended decision naming it before its
+        first byte. No decision names this wait and nobody has been told to
+        answer it. Leaving it would be worse than untidy — the ask's own retry
+        would find it pending, answer `suspend` on it and never put the request
+        to the provider again, so a provider failure would come back as a wait
+        that provider never received; and an approval indexed against a decision
+        the authority never held is a reference a reader follows to nothing
+        (articles 2, 3 and 12).
+
+        Pending, unpublished and unclaimed, checked here rather than trusted: a
+        wait somebody has been told about, one somebody could be resolving, or
+        an execution another ask holds, is not this ask's to drop. The
+        publication check is what keeps this from undoing a wait another
+        successful ask is already answering on.
+        """
+        with self._lock:
+            kept = self.read(scope, approval_ref)
+            if kept.state is not ApprovalState.PENDING or kept.claimed or kept.published:
                 raise ValueError(
                     f"approval {approval_ref!r} is {kept.state.value}"
+                    f"{' and published' if kept.published else ''}"
                     f"{' and claimed' if kept.claimed else ''}: only a wait nobody has "
-                    "answered and nobody is spending can be abandoned"
+                    "been told about, nobody has answered and nobody is spending can be "
+                    "abandoned"
                 )
             key = (scope, approval_ref)
             del self._by_reference[key]
@@ -337,15 +401,17 @@ class ApprovalStore:
         the same for everyone who asks. `in_flight` is the one difference, and
         it is the difference between the two questions this store is asked: a
         reader asking what still answers a question is not told about an
-        execution another ask is in the middle of spending, while a caller
-        about to open a *new* wait must be, or it would open one over a
-        person's act and hide it.
+        execution another ask is in the middle of spending, nor about a wait
+        another ask is in the middle of opening, while a caller about to open a
+        *new* wait must be told about both, or it would open one over a person's
+        act — or over a suspension somebody is about to be told to answer — and
+        hide it.
         """
         for key in reversed(self._by_question.get(question, ())):
             kept = self._by_reference[key]
             if kept.consumed:
                 continue
-            if kept.claimed and not in_flight:
+            if (kept.claimed or not kept.published) and not in_flight:
                 continue
             if kept.state_at(now) is ApprovalState.EXPIRED:
                 continue
@@ -392,6 +458,10 @@ class ApprovalStore:
                 resolved_at=now,
                 person=person,
                 resolution_reason=reason,
+                # An act is itself somebody outside the opening ask having been
+                # told: a person answered this reference, so it is no longer
+                # that ask's to withdraw, whatever became of its append.
+                published=True,
             )
             self._by_reference[key] = resolved
             # A rejection lapses one wait-length after the act; an approval
@@ -489,11 +559,14 @@ class ApprovalStore:
                     f"approval {approval_ref!r} was not claimed: the execution is taken "
                     "under this lock before the decision that spends it is recorded"
                 )
-            consumed = replace(kept, consumed=True)
+            consumed = replace(kept, consumed=True, consumed_at=self.clock())
             key = (scope, approval_ref)
             self._by_reference[key] = consumed
-            # Spending it is what gives it a lapse instant: until now it was
-            # the one record this store keeps for the life of the process.
+            # Spending it is what gives it a lapse instant, and the instant is
+            # measured from here: until now it was the one record this store
+            # keeps for the life of the process, so the act it names may be
+            # hours old and counting the lapse from the act would forget the
+            # record at the very sweep that follows the spend.
             self._index_lapse(key, consumed)
         return consumed
 
@@ -534,13 +607,16 @@ class ApprovalStore:
         One rule, about what a reader is still entitled to, and one exception
         to it. A record whose wait is over and whose execution is not
         outstanding — spent, rejected or expired — keeps answering
-        `read_approval` for one more wait-length after it resolved,
-        `resolved_at + (deadline - requested_at)`, because the caller that asked
-        is the caller that reads it and it was already willing to wait that
-        long; past that the record is of no use to anyone this store serves. A
-        spent approval answers no re-ask from the moment it is consumed (the
-        question index is what `consume` closes), but it is still read by
-        reference for that wait-length, as approved.
+        `read_approval` for one more wait-length after the transition that
+        ended its usefulness, `(deadline - requested_at)` past that instant,
+        because the caller that asked is the caller that reads it and it was
+        already willing to wait that long; past that the record is of no use to
+        anyone this store serves. For a rejection or a lapse that instant is
+        `resolved_at`; for a spent approval it is `consumed_at`, because an
+        approved record is kept until its execution is taken and the taking may
+        be hours after the act. A spent approval answers no re-ask from the
+        moment it is consumed (the question index is what `consume` closes),
+        but it is still read by reference for that wait-length, as approved.
 
         The exception is an approved approval nobody has spent, and it is the
         one record this store may hold for the life of the process: the act
@@ -632,16 +708,26 @@ def _lapse_instant(kept: Approval) -> datetime | None:
     """When this record becomes of no further use, or None while nothing can say.
 
     The same rule `_is_of_no_further_use` states, read forwards: one wait-length
-    after the act or the lapse that ended it. A pending wait has no such instant
-    because it has not ended, and an approved approval nobody has spent has none
-    because the act stands until the execution it authorises is taken. The two
-    answers are one function apart so they cannot drift — an index that invented
-    an instant for either would drop a record the store owes a reader.
+    after the transition that ended this record's usefulness. A pending wait has
+    no such instant because it has not ended, and an approved approval nobody
+    has spent has none because the act stands until the execution it authorises
+    is taken. For everything else the transition is the one that just happened:
+    the **spend** for a record whose execution was taken, and the act or the
+    lapse for a rejection or an expiry. The distinction is not pedantry — an
+    approved record may be spent hours after the act, and counting its retention
+    from the act made the first sweep after that spend forget the record the
+    caller had just been granted, so a reader asking after the reference its own
+    allow names was told `approval_unknown` (article 2). The two answers are one
+    function apart so they cannot drift — an index that invented an instant for
+    either would drop a record the store owes a reader.
     """
     if kept.state is ApprovalState.PENDING:
         return None
     if kept.state is ApprovalState.APPROVED and not kept.consumed:
         return None
+    if kept.consumed:
+        assert kept.consumed_at is not None, "a consumed approval carries the instant it was spent"
+        return kept.consumed_at + (kept.deadline - kept.requested_at)
     assert kept.resolved_at is not None, "a terminal approval carries the instant it ended"
     return kept.resolved_at + (kept.deadline - kept.requested_at)
 
@@ -651,9 +737,10 @@ def _is_of_no_further_use(kept: Approval, now: datetime) -> bool:
 
     Read as one predicate rather than inline, so the rule it holds is one thing
     a reader can check against the docstring that states it. A consumed
-    approval is not dropped the instant it is spent: for that wait-length a
-    reader asking after the reference still learns it was approved, instead of
-    « unknown », which would read as if nobody had ever asked (article 2).
+    approval is not dropped the instant it is spent: for one wait-length from
+    the spend — not from the act, which may be hours older — a reader asking
+    after the reference still learns it was approved, instead of « unknown »,
+    which would read as if nobody had ever asked (article 2).
 
     An approved approval nobody has spent is never dropped, whatever the clock
     says, and that is the one exception to the wait-length rule. It is the

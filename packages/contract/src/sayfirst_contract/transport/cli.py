@@ -36,6 +36,7 @@ from .socket_client import (
     SocketProfile,
     connect,
     declared_delegation,
+    profile_address,
 )
 
 EXIT_OK: Final[int] = 0
@@ -53,7 +54,11 @@ def build_parser() -> argparse.ArgumentParser:
     # reached through whichever console script forwarded to it.
     parser = argparse.ArgumentParser()
     parser.add_argument("command", choices=COMMANDS)
-    parser.add_argument("--socket", required=True)
+    parser.add_argument(
+        "--socket",
+        default=None,
+        help="the daemon's socket; a per-user profile given none uses the per-user default",
+    )
     parser.add_argument("--mode", choices=(PER_USER, SYSTEM), default=PER_USER)
     parser.add_argument("--daemon-user", default=None)
     parser.add_argument("--json", action="store_true")
@@ -172,8 +177,9 @@ def main(argv: Sequence[str] | None = None, *, out: object = None, err: object =
     err = err or sys.stderr
     arguments = build_parser().parse_args(argv)
     try:
+        address = profile_address(arguments.socket, arguments.mode)
         profile = SocketProfile(
-            arguments.socket, mode=arguments.mode, daemon_user=arguments.daemon_user
+            address.path, mode=arguments.mode, daemon_user=arguments.daemon_user
         )
     except ProfileMisuse as misuse:
         print(str(misuse), file=err)  # type: ignore[arg-type]
@@ -182,6 +188,11 @@ def main(argv: Sequence[str] | None = None, *, out: object = None, err: object =
     try:
         connection = connect(profile)
     except SocketClientProblem as problem:
+        if address.defaulted and not arguments.json:
+            # Nobody typed this address, so nobody can be expected to know it:
+            # said before the problem, and only in prose — the envelope is a
+            # published shape, and a line beside it would break its reader.
+            print(address.looked_at(), file=err)  # type: ignore[arg-type]
         envelope = {
             "contract_generation": CONTRACT_GENERATION,
             "verification": {"server_uid": None, "expected": None, "verified": False},

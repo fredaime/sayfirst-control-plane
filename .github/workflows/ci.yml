@@ -52,6 +52,7 @@ jobs:
   #   - test_an_impostor_bound_at_the_path_is_refused_by_the_client
   #   - test_status_answers_the_document_the_contract_publishes
   #   - test_status_exits_could_not_ask_when_nothing_is_listening
+  #   - test_status_given_no_address_finds_a_per_user_daemon_at_the_default_one
   #   - test_status_names_the_grade_its_basis_the_interval_and_the_provider
   #   - test_the_command_exits_could_not_ask_when_nothing_is_listening
   #   - test_the_command_refuses_an_impostor_and_sends_it_nothing
@@ -120,9 +121,17 @@ jobs:
           --base=${{ github.event.pull_request.base.sha }}
           --head=${{ github.event.pull_request.head.sha }}
 
+  # Every interpreter `requires-python` admits, since a release installs on any
+  # of them: a suite that ran on whichever one the runner offered proved one.
   gate:
-    name: whole suite and format
+    name: whole suite and format (python ${{ matrix.python }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.12", "3.13", "3.14"]
+    env:
+      UV_PYTHON: ${{ matrix.python }}
     steps:
       - uses: actions/checkout@v4
         with:

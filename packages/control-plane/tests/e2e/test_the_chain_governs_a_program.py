@@ -51,7 +51,7 @@ from contextlib import closing
 from pathlib import Path
 
 import pytest
-from _daemon import REPOSITORY, SOURCES, _Daemon, _rule
+from _daemon import CLIENT_REPO, REPOSITORY, SOURCES, _Daemon, _rule
 from sayfirst_contract.client import Answered
 from sayfirst_contract.transport.socket_client import SocketProfile, VerifiedConnection, connect
 
@@ -61,11 +61,11 @@ from sayfirst_contract.transport.socket_client import SocketProfile, VerifiedCon
 #: on the wire, and a read that arrives first is "not yet" and not "never".
 POLL_SECONDS = 15
 
-#: The open command-line client, run as a SUBPROCESS for the reason given
-#: beside the same constant in `test_the_reads_answer_from_a_real_daemon.py`:
-#: article 13 keeps the client depending on the contract and never on the
-#: server, and a process boundary is the honest way to exercise it from here.
-CLIENT_REPO = REPOSITORY.parent / "sf-cli-lt"
+# The open command-line client, found at `CLIENT_REPO` by
+# `_daemon.client_checkout`, is run as a SUBPROCESS for the reason given in
+# `test_the_reads_answer_from_a_real_daemon.py`: article 13 keeps the client
+# depending on the contract and never on the server, and a process boundary is
+# the honest way to exercise it from here.
 
 #: The instrumentation chain's own module, present only once the sibling
 #: checkout ships `sayfirst instrument`. Checked apart from `CLIENT_PRESENT`
@@ -208,11 +208,12 @@ def _instrument_run(*args: str) -> subprocess.CompletedProcess[str]:
     """`sayfirst instrument run ...`, exactly as the console script would run it.
 
     Invoked the way `test_the_reads_answer_from_a_real_daemon.py` invokes
-    every read — `-c "from sayfirst_cli.main import run; run()"`, never
-    `-m sayfirst_cli.main` — for the reason given beside that module's own
-    `_client`: the `-m` form puts the working directory on the import path as
-    a side effect of how the interpreter starts, which is exactly the thing
-    `instrument run`'s own launcher is under test for supplying itself.
+    every read — `-c "from sayfirst_cli.main import run; run()"`, which calls
+    the very `run()` the `sayfirst` entry point calls — and never
+    `-m sayfirst_cli.main`, which on a client checkout from before that module
+    had a `__main__` guard imported it and exited 0 having run nothing. Both
+    forms put the working directory at the head of the import path, and the
+    launcher under test replaces that head either way.
     """
     argv = [
         sys.executable,
@@ -330,7 +331,8 @@ def test_an_unreachable_daemon_fails_closed(tmp_path: Path) -> None:  # type: ig
         "--",
         str(app),
     )
-    assert finished.returncode == 1, (finished.returncode, finished.stdout, finished.stderr)
+    # 4, the published « could not ask » — never 1, which is « deny » (article 1).
+    assert finished.returncode == 4, (finished.returncode, finished.stdout, finished.stderr)
     assert "CouldNotAsk" in finished.stderr, (finished.stdout, finished.stderr)
     assert "done" not in finished.stdout, (finished.stdout, finished.stderr)
     assert not marker.exists(), (marker, finished.stdout, finished.stderr)

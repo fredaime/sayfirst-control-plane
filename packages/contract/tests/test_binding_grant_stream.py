@@ -31,8 +31,10 @@ from pathlib import Path
 
 import pytest
 from sayfirst_contract.binding.http_unix_socket.client import SocketClient
+from sayfirst_contract.client import CouldNotAsk
 from sayfirst_contract.decisions import DecisionAsk, Outcome
 from sayfirst_contract.grants import GrantEndReason, GrantSignal, GrantSignalKind
+from sayfirst_contract.problems import ProblemCode
 
 DIGEST = "sha256:" + "1" * 64
 VERSION = "sha256:" + "a" * 64
@@ -370,3 +372,27 @@ def test_the_existing_ask_still_closes_its_connection(socket_path: Path) -> None
     # The grant document still arrives in `extra` — it always did — and is
     # unusable, because the channel it is bound to is gone.
     assert "grant" in result.value.extra
+
+
+@pytest.mark.parametrize(
+    "grant",
+    [
+        {"grant_id": "g-1"},
+        {**GRANT, "lifetime_seconds": "soon"},
+        {**GRANT, "conditions": None},
+    ],
+    ids=["members-missing", "lifetime-not-a-number", "conditions-not-an-object"],
+)
+def test_a_grant_that_does_not_read_is_an_unreadable_answer(
+    socket_path: Path, grant: dict[str, object]
+) -> None:
+    """Part of the answer does not read, so none of it is acted on — and it is said.
+
+    It used to escape as the parser's own KeyError or ValueError, with the connection
+    left open behind it: an exception that is none of a boundary's four outcomes.
+    """
+    _serve(socket_path, [_frame("decision", _decision(grant=grant))])
+    result, channel = _client(socket_path).hold_decision(_ask())
+    assert channel is None
+    assert isinstance(result, CouldNotAsk), result
+    assert result.problem.code is ProblemCode.ANSWER_UNREADABLE

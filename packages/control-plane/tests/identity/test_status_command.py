@@ -16,9 +16,11 @@ import json
 import os
 from pathlib import Path
 
+import pytest
 from daemon_process import serving, write_config
 from sayfirst_contract.transport.cli import (
     EXIT_COULD_NOT_ASK,
+    EXIT_MISUSE,
     EXIT_OK,
     build_parser,
     main,
@@ -76,6 +78,46 @@ def test_status_exits_could_not_ask_when_nothing_is_listening(tmp_path: Path) ->
     envelope = json.loads(err.getvalue())
     assert envelope["verification"]["verified"] is False
     assert envelope["problem"]["code"] == "unreachable"
+
+
+@requires_platforms(*OS_REAL_PLATFORMS)
+def test_status_given_no_address_finds_a_per_user_daemon_at_the_default_one(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Rule L2 read from the other end: a daemon that chose the default address is
+    found by a caller that names none, because both read the binding's one rule."""
+    home = tmp_path / "home"
+    home.mkdir(mode=0o700)
+    config = write_config(tmp_path / "configuration", path=None)
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.delenv("XDG_RUNTIME_DIR", raising=False)
+    out, err = io.StringIO(), io.StringIO()
+    with serving(config, home=home):
+        code = main(["status"], out=out, err=err)
+    assert code == EXIT_OK, err.getvalue()
+    assert f"verified: true (server_uid {os.geteuid()}, expected {os.geteuid()})" in out.getvalue()
+
+
+def test_status_given_no_address_says_where_it_looked_when_nobody_is_there(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Article 2: an address nobody typed is an address somebody has to be told."""
+    monkeypatch.setenv("HOME", str(tmp_path))
+    monkeypatch.delenv("XDG_RUNTIME_DIR", raising=False)
+    out, err = io.StringIO(), io.StringIO()
+    code = main(["status"], out=out, err=err)
+    assert code == EXIT_COULD_NOT_ASK
+    assert out.getvalue() == ""
+    assert "unreachable" in err.getvalue()
+    assert f"socket: {tmp_path}/.sayfirst/run/daemon.sock (the per-user default" in err.getvalue()
+
+
+def test_a_system_profile_is_never_given_a_default_address(tmp_path: Path) -> None:
+    """Rule C1's neighbour: a system profile says where and as whom, in words."""
+    out, err = io.StringIO(), io.StringIO()
+    code = main(["status", "--mode", "system", "--daemon-user", "root"], out=out, err=err)
+    assert code == EXIT_MISUSE
+    assert "--socket" in err.getvalue()
 
 
 def test_both_inspections_are_reached_through_one_parser_and_one_profile() -> None:

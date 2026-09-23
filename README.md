@@ -80,27 +80,66 @@ conformance kit (`sayfirst-testing`) are **publishing**; until they land, run
 them from a checkout of this repository:
 `uv sync --frozen --all-packages && uv run --frozen sayfirst-daemon --help`.
 
-## Try it in five minutes
+## Try it in three commands
+
+```console
+$ uv tool install sayfirst-cli --with-executables-from sayfirst-control-plane --with-executables-from sayfirstd
+$ sayfirst-daemon up --quickstart
+```
+
+The third is the product client's, and it is shown where that command is
+published — the client's
+[`README`](https://github.com/fredaime/sayfirst-cli/blob/main/README.md): its
+`instrument run` verb, given `--pack subprocess --scope local -- python
+my_agent.py`, runs a program you already have with every process it starts
+asked about first. It is told neither where this daemon is nor where the pack
+is: the address is the per-user default, which the daemon and the client each
+compute by the one rule the contract distribution publishes, and `subprocess`
+names a pack the client ships and finds by that name — a rule of the client's
+alone.
+
+`up --quickstart` is a first run's convenience over `serve`, and only that. It
+writes a commented starter policy and a per-user configuration under
+`~/.sayfirst/quickstart/` **when they are not there** — a file that exists is
+yours and is never written over — starts this same daemon in the background,
+and says « ready » only once that daemon has answered a status request over its
+socket:
+
+```console
+$ sayfirst-daemon up --quickstart
+SayFirst Control Plane ready
+mode: per_user
+socket: /run/user/1000/sayfirst/daemon.sock
+policy: ~/.sayfirst/quickstart/policy.toml
+evidence: ~/.sayfirst/quickstart/evidence
+integrity grade: observability (the caller can write the store; the chain detects accidental corruption only)
+…
+stop: sayfirst-daemon down
+```
+
+`up` prints every path absolute; `~` above stands for your home directory. The
+grade line is the daemon's own answer, not the quickstart's: a per-user caller
+can write the store it is asking about, so the grade is `observability`, and a
+convenient start does not get to say anything better. `sayfirstd status` asks
+the same question later. A second `up` reports the daemon it started as
+« already running », with the socket, policy and evidence that daemon was
+started on — it reads its configuration once — and a `note:` line for each of
+them `daemon.toml` now names differently. `sayfirst-daemon down` stops the
+daemon `up` started and no other: it signals a process only when the start
+instant the system reports for the recorded id, on the boot it was recorded on,
+is the one `up` recorded. A living process it cannot prove is that daemon is
+left running and its record kept, and `down` says so and exits 1;
+[`docs/deployment.md`](docs/deployment.md) has the whole of it.
 
 The client's
 [`QUICKSTART.md`](https://github.com/fredaime/sayfirst-cli/blob/main/QUICKSTART.md)
-installs the command beside its daemon and walks one governed decision end to
-end. Every command on it was run, in that order, before it was written down,
-and the answers are pasted from that run. The lines it exists for:
-
-```console
-$ .venv/bin/sayfirst ask --capability example.send --scope local --socket $S
-outcome: suspend
-reason: policy_requires_review
-$ .venv/bin/sayfirst approvals approve --approval $A --scope local --socket $S --reason "checked by hand"
-state: approved
-$ .venv/bin/sayfirst ask --capability example.send --scope local --socket $S
-outcome: allow
-reason: approval_granted
-```
-
-Nothing executed before the person acted; that second allow is the one
-execution their act authorised.
+walks the whole of it: an allow, a denial by changing one word of the policy, a
+suspension and the person who ends it, the proof, and the chain read back. Every
+command on it was run, in that order, before it was written down. Those three
+commands are those of the release **after 0.2.0**, and the daemon is not on the
+index yet (the section above); until then they run from checkouts, as that page
+says. A deployment of your own goes on using `sayfirst-daemon serve --config`
+under its own supervisor — [`docs/deployment.md`](docs/deployment.md).
 
 ## What you get
 
@@ -171,6 +210,12 @@ Inside this repository:
 - **`packages/control-plane`** — the host-scoped server core: `domain`,
   `ports`, `application`, `adapters` and `plugins`, wired together in exactly
   one place. The direction of dependency runs inward.
+  The same distribution carries a second, small package, `sayfirst_quickstart`:
+  the front of the `sayfirst-daemon` command, which hands `serve` to the server
+  untouched and adds `up --quickstart` and `down`. It stands outside the server's
+  package because what it writes — a log, a note of the process it started, two
+  starter files — is no fact of the control plane, and the server imports
+  nothing from it.
 - **`packages/boundary`** — the in-process boundary and the grant. It holds no
   policy and decides nothing.
 - **`packages/cli`** — `sayfirstd`, the operator surface: `plugins`, `whoami`,

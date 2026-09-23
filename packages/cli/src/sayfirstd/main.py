@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+import tomllib
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -34,9 +35,10 @@ from sayfirst_contract.plugins import (
     PluginEntryPointMetadata,
     accepts_plugin_interface_version,
     discover_plugin_entry_points,
+    parse_plugin_configuration,
     read_composition_evidence,
-    read_plugin_configuration,
 )
+from sayfirst_contract.transport.cli import EXIT_MISUSE
 
 REFUSED = "refused"
 UNKNOWN = "unknown"
@@ -77,9 +79,19 @@ class ConfiguredSelection:
 
 
 def _read_selections(path: Path | None) -> tuple[ConfiguredSelection, ...] | None:
+    """What a configuration selects, `()` when it selects nothing, `None` when none was named.
+
+    A daemon configuration without a plugins table is a valid one — the daemon
+    composes its defaults from it, and the quickstart's own `daemon.toml` is
+    one — so it selects nothing rather than failing to read.
+    """
     if path is None:
         return None
-    providers = read_plugin_configuration(path)
+    with path.open("rb") as stream:
+        document = tomllib.load(stream)
+    if "plugins" not in document:
+        return ()
+    providers = parse_plugin_configuration(document)
     return tuple(
         ConfiguredSelection(interface, selection.provider, selection.interface_version)
         for interface, selection in providers.items()
@@ -208,17 +220,35 @@ def main(
     *,
     entry_points: Iterable[PluginEntryPointMetadata] | None = None,
     stdout: TextIO | None = None,
+    stderr: TextIO | None = None,
 ) -> int:
     forwarded = list(sys.argv[1:] if argv is None else argv)
     if forwarded and forwarded[0] in CONTRACT_COMMANDS:
         return contract_main(forwarded, stdout=stdout)
     arguments = _parser().parse_args(forwarded)
     if arguments.command == "plugins" and arguments.plugin_command == "list":
-        selections = _read_selections(arguments.config)
-        composed = _read_composition(arguments.composition)
+        # A file named on the command line that does not read — absent, not
+        # TOML, not the shape it has to have — is the caller's misuse, said once
+        # with the reason and the file it was; a traceback is not how this
+        # command reports a file it was handed. (A TOML decode error is a
+        # ValueError.) Each file is read on its own so the sentence names the
+        # one that failed.
+        try:
+            selections = _read_selections(arguments.config)
+        except (OSError, ValueError) as unread:
+            return _unread(arguments.config, unread, stderr)
+        try:
+            composed = _read_composition(arguments.composition)
+        except (OSError, ValueError) as unread:
+            return _unread(arguments.composition, unread, stderr)
         _write_plugin_list(stdout or sys.stdout, selections, _discover(entry_points), composed)
         return 0
     raise AssertionError("argparse accepted an unknown command")
+
+
+def _unread(path: Path, unread: Exception, stderr: TextIO | None) -> int:
+    (stderr or sys.stderr).write(f"sayfirstd: plugins list: {path}: {unread}\n")
+    return EXIT_MISUSE
 
 
 def run() -> None:

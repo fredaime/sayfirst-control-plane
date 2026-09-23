@@ -43,7 +43,7 @@ The grade is re-evaluated when a connection next asks something, and before
 every verdict: the documented interval is a cache age consulted on that next
 request, not a scan, so a connection that sits idle keeps the grade it was last
 given until it acts, and nothing here scans for one that does not (article 7,
-whose Guard says the same). `sayfirst status` shows the caller's grade; every
+whose Guard says the same). `sayfirstd status` shows the caller's grade; every
 verification verdict carries the weakest grade in effect over the period it
 covers.
 

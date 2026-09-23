@@ -38,7 +38,7 @@ from ..ports.policy_store import (
     PolicyStore,
     PolicyUnavailable,
 )
-from .approvals import ApprovalAlreadyClaimed, ApprovalStore
+from .approvals import ApprovalAlreadyClaimed, ApprovalStore, ApprovalUnknown
 from .events import Events, NullEvents
 from .grants import GrantConnection, GrantConnections, GrantReservation, GrantSignal
 from .policy import PolicyService
@@ -53,6 +53,19 @@ from .policy import PolicyService
 #: loop, because something is wrong that waiting will not fix.
 _CLAIM_TRIES = 5
 _CLAIM_PAUSE_SECONDS = 0.012
+
+#: The two things an ask of a suspended question can lose to, and what each
+#: tells the caller. Both are `decision_contended` — nobody failed, nothing was
+#: decided, ask again — and they are two sentences because an operator reading
+#: one of them is looking at a different moment of a wait's life: an execution
+#: being spent, or a wait being opened.
+_HELD_EXECUTION = (
+    "another ask of this question holds the one execution its approval authorises, "
+    "so this ask was not decided; ask again"
+)
+_OPENING_WAIT = (
+    "another ask of this question is still opening its wait, so this ask was not decided; ask again"
+)
 
 #: The published schema every ask is judged by, whichever surface carried it.
 _ASK_SCHEMA = "decision-ask-request"
@@ -137,6 +150,12 @@ class _Consulted:
     reason: Reason
     approval_ref: str
     spend: bool
+    #: Whether this ask is the one that minted the wait it names. A wait is
+    #: opened before its suspended decision is committed, and until that record
+    #: exists it belongs to this ask alone: this ask publishes it once the
+    #: append has gone through, and withdraws it when nothing was written
+    #: (`ApprovalStore.publish` and `ApprovalStore.abandon`).
+    opened: bool = False
 
 
 class DecisionService:
@@ -391,10 +410,13 @@ class DecisionService:
             # approval provider is not answering », and naming the provider
             # here would name a component that was never even asked.
             return DecisionProblem(self._problem(ProblemCode.DECISION_CONTENDED, str(contended)))
-        # One exit for the claim, from here to the record. An execution
-        # claimed and not recorded is given back — whatever happened in
-        # between, including a raise this service does not anticipate —
-        # because nothing a person granted is lost for want of a record.
+        # One exit for the claim AND for the wait this ask opened, from here to
+        # the record. An execution claimed and not recorded is given back —
+        # whatever happened in between, including a raise this service does not
+        # anticipate — because nothing a person granted is lost for want of a
+        # record; and a wait opened and not recorded is withdrawn, because an
+        # approval indexed against a decision the authority never held is a
+        # reference a reader follows to nothing (article 3).
         # Once the record exists, **or may exist**, it is not given back:
         # releasing behind a committed record would license a second allow on
         # one act, and an append that cannot say whether it committed is that
@@ -461,9 +483,16 @@ class DecisionService:
                 # call — into the recorded event, and into the answer the caller is
                 # given — so the store is handed the core's own copy of it, `extra`
                 # rebuilt with it because a mapping is written to more easily still.
-                position = core_owned_position(
-                    self.decisions.append(core_owned_input(Decision, decision, extra=dict))
-                )
+                #
+                # The call and the reading of what it answered are two
+                # statements, and the split is the whole point: everything this
+                # `try` catches happened BEFORE or DURING the write, and
+                # anything that goes wrong with the receipt happens after it,
+                # where the record already exists. Reading the receipt inside
+                # this `try` put a committed decision under the handler for « the
+                # store refused before its first byte », and the execution was
+                # given back behind a record anybody could read.
+                receipt = self.decisions.append(core_owned_input(Decision, decision, extra=dict))
             except DecisionAppendIndeterminate as error:
                 # The write began: the record may have committed, and nothing here
                 # can say. No usable answer, the reservation released, and never
@@ -479,6 +508,7 @@ class DecisionService:
                 # answer. The flag is set first, so a store that refuses the
                 # consumption still leaves the claim held rather than released.
                 recorded = True
+                self._publish_opened(decision.scope, consulted)
                 self._consume_claimed(decision.scope, consulted)
                 if reservation is not None:
                     reservation.cancel()
@@ -500,8 +530,30 @@ class DecisionService:
                 )
             # The record exists from here: whatever happens next, the
             # execution this ask claimed was spent on a decision somebody can
-            # read.
+            # read, and the wait this ask opened is a wait somebody can answer.
             recorded = True
+            self._publish_opened(decision.scope, consulted)
+            try:
+                position = core_owned_position(receipt)
+            except Exception as error:
+                # The append returned, so the record is committed; what cannot
+                # be read is where it landed. The receipt is still judged —
+                # a position this core cannot own is not rendered to a caller
+                # (article 3, value side) — but the answer this failure earns is
+                # the one an append that cannot say earns, and not the one a
+                # refusal before the first byte earns: failure to read a receipt
+                # does not establish failure to commit, so the execution stays
+                # spent and the reservation goes.
+                self._consume_claimed(decision.scope, consulted)
+                if reservation is not None:
+                    reservation.cancel()
+                return DecisionProblem(
+                    self._problem(
+                        ProblemCode.DECISION_STORE_UNAVAILABLE,
+                        f"the decision committed but the authority's receipt could not be "
+                        f"read, so it could not be answered: {error}",
+                    )
+                )
             if consulted is not None and consulted.spend:
                 # After the append and only after it. A consumption without a
                 # record is an execution nobody can trace, so the branch that
@@ -550,6 +602,7 @@ class DecisionService:
         finally:
             if not recorded:
                 self._release_claim(question.ask.scope, consulted)
+                self._withdraw_opened(question.ask.scope, consulted)
 
     def _consult_approvals(
         self,
@@ -588,12 +641,28 @@ class DecisionService:
         stays contested for every look is answered as contended, which is a
         could-not-ask and not a decision.
 
+        A wait another ask is still **opening** is the same thing one step
+        earlier, and it is the fifth thing this can find. Between the store
+        keeping a wait and the suspension naming it being committed, that wait
+        belongs to the ask that minted it: it is kept so that nothing opens a
+        second wait over it, and it is unpublished so that nothing is answered
+        with it. Answering `suspend` on it here would hand a caller a reference
+        the other ask can still withdraw and commit a decision of this ask's own
+        behind that reference — which is how a caller ends up holding a
+        reference that reads `approval_unknown` behind a suspension nobody
+        retracts. So it is looked at again, and answered as contention if it is
+        still not published: nobody failed, and this ask's retry finds the wait
+        published or opens one of its own.
+
         The wait itself is opened here, not by the provider: the question is a
         member of the record and it is established from the connection and the
         ask, neither of which a provider may be trusted to tell the core
         (article 3). The provider's own act is then put to it through the
         port's published call, and a provider that cannot answer leaves this
-        ask with no decision rather than an outcome nobody decided.
+        ask with no decision rather than an outcome nobody decided. What
+        publishes the wait afterwards is `ask`, behind the committed record
+        (`_publish_opened`), and what takes it back is `ask` too, when nothing
+        was written (`_withdraw_opened`).
         """
         approvals = self.approvals
         provider = self.approval_provider
@@ -621,46 +690,79 @@ class DecisionService:
             requested_at=now,
             deadline=now + timedelta(seconds=rule.review_deadline_seconds),
         )
+        contention = _HELD_EXECUTION
         for attempt in range(_CLAIM_TRIES):
             found = approvals.open_if_absent(opening)
             if found.approval_ref == opening.approval_ref:
                 self._open_with(provider, approvals, opening)
+                # Opened, and taken up by the provider — and not published: the
+                # suspended decision naming it is not written yet, and until it
+                # is, this wait is this ask's and no other ask is answered with
+                # it. `ask` publishes it behind that record, or withdraws it.
                 return _Consulted(
-                    Outcome.SUSPEND, Reason.POLICY_REQUIRES_REVIEW, found.approval_ref, spend=False
+                    Outcome.SUSPEND,
+                    Reason.POLICY_REQUIRES_REVIEW,
+                    found.approval_ref,
+                    spend=False,
+                    opened=True,
                 )
             if found.state is ApprovalState.PENDING:
-                return _Consulted(
-                    Outcome.SUSPEND, Reason.POLICY_REQUIRES_REVIEW, found.approval_ref, spend=False
-                )
-            if found.state is ApprovalState.REJECTED:
+                if not found.published:
+                    # Another ask is between opening this wait and committing
+                    # the decision that names it. Answering `suspend` on it here
+                    # would publish a reference that ask can still withdraw, and
+                    # commit a decision of this ask's own behind it — which is
+                    # how a caller ends up holding a reference that reads
+                    # `approval_unknown` behind a decision nobody retracts.
+                    # Nobody failed and nothing was decided: look again, and
+                    # answer contention if it is still not published.
+                    contention = _OPENING_WAIT
+                else:
+                    return _Consulted(
+                        Outcome.SUSPEND,
+                        Reason.POLICY_REQUIRES_REVIEW,
+                        found.approval_ref,
+                        spend=False,
+                    )
+            elif found.state is ApprovalState.REJECTED:
                 return _Consulted(
                     Outcome.DENY, Reason.APPROVAL_REJECTED, found.approval_ref, spend=False
                 )
-            if found.state is not ApprovalState.APPROVED:
+            elif found.state is not ApprovalState.APPROVED:
                 raise AssertionError(
                     "the store answers a question with a pending, approved or rejected "
                     "approval only"
                 )
-            if not found.claimed:
+            elif not found.claimed:
                 try:
                     approvals.claim(found.scope, found.approval_ref)
                 except ApprovalAlreadyClaimed:
-                    pass
+                    contention = _HELD_EXECUTION
+                except ApprovalUnknown:
+                    # The record was forgotten between this look and this claim.
+                    # An ordinary lookup race and not a fault: the sweep may
+                    # drop a record another ask has just spent, and the answer
+                    # to « what I found is no longer there » is to look again —
+                    # which finds the question unanswered and opens a wait of
+                    # its own. Letting it escape made an ordinary contention an
+                    # internal server error (article 2).
+                    continue
                 else:
                     return _Consulted(
                         Outcome.ALLOW, Reason.APPROVAL_GRANTED, found.approval_ref, spend=True
                     )
+            else:
+                contention = _HELD_EXECUTION
             # In flight: another ask claimed this execution and is recording the
-            # allow it authorises, or is about to give it back. Waiting is not
-            # a wait on a person — it is a wait on one append — and the
-            # alternative, opening a wait of this ask's own, would bury a
-            # person's act under a newer suspension nobody has answered.
+            # allow it authorises, or is about to give it back; or another ask
+            # is still opening this question's wait. Waiting is not a wait on a
+            # person — it is a wait on one append — and the alternative, opening
+            # a wait of this ask's own, would bury a person's act, or a
+            # suspension somebody is about to be told to answer, under a newer
+            # wait nobody has answered.
             if attempt + 1 < _CLAIM_TRIES:
                 sleep(_CLAIM_PAUSE_SECONDS)
-        raise _DecisionContended(
-            "another ask of this question holds the one execution its approval authorises, "
-            "so this ask was not decided; ask again"
-        )
+        raise _DecisionContended(contention)
 
     def _open_with(
         self, provider: ApprovalProvider, approvals: ApprovalStore, opened: Approval
@@ -673,9 +775,15 @@ class DecisionService:
         is retryable, and a retry would find its own pending wait, answer
         `suspend` on it, and never reach the provider again — a provider
         failure laundered into a suspension that provider never received
-        (articles 2 and 12). Nobody else can hold this wait: it was minted by
-        this ask, opened an instant ago, and no answer naming it has left the
-        daemon.
+        (articles 2 and 12).
+
+        Nobody else can hold this wait, and that is now a property rather than
+        a hope. It is *opened* and not *published*: the store answers no other
+        ask with an unpublished wait, and `abandon` refuses one that has been
+        published, so the only ask that can be holding this reference is this
+        one. It was not always so — a second ask was answered this very wait
+        while this call was inside the provider, committed a suspension naming
+        it, and read `approval_unknown` on it the moment this call failed.
         """
         try:
             self._put_the_suspension_to(provider, opened)
@@ -738,6 +846,49 @@ class DecisionService:
             return
         with suppress(Exception):
             self.approvals.release_claim(scope, consulted.approval_ref)
+
+    def _publish_opened(self, scope: str, consulted: _Consulted | None) -> None:
+        """Hand the wait this ask opened over to everybody else, behind its record.
+
+        The instant a suspension stops being this ask's business: the provider
+        has the request, and the decision naming this wait is committed — or
+        may be, which article 3 reads as committed, because a wait withdrawn
+        from behind a record that did commit is a caller told to wait on a
+        reference the daemon then denies all knowledge of.
+
+        Best effort, like the give-back and the spend: a store that refuses
+        leaves the wait unpublished, and an unpublished wait is answered as
+        contention rather than as a suspension nobody opened — a question
+        nobody can suspend until it lapses, which is again the fail-closed
+        cost and never a reference pointing at nothing.
+        """
+        if consulted is None or not consulted.opened or self.approvals is None:
+            return
+        with suppress(Exception):
+            self.approvals.publish(scope, consulted.approval_ref)
+
+    def _withdraw_opened(self, scope: str, consulted: _Consulted | None) -> None:
+        """Take back a wait this ask opened and never recorded a decision for.
+
+        The mirror of `_publish_opened`, and the reason `abandon` exists on the
+        store. Nothing was written and nothing could have been — the append
+        refused before its first byte, or this service raised somewhere it does
+        not anticipate — so this wait names a decision the authority does not
+        hold. Left behind, the retry the retryable answer invites finds it
+        pending, answers `suspend` on it and never reaches the provider again;
+        and a reader following the approval reaches nothing (articles 2, 3
+        and 12).
+
+        Only a wait this ask opened, and `abandon` checks again under the
+        store's lock that nobody has been told about it, nobody has answered it
+        and nobody is spending it: a wait a person resolved in this window
+        stays, because discarding one person's act to tidy up is the worse of
+        the two costs.
+        """
+        if consulted is None or not consulted.opened or self.approvals is None:
+            return
+        with suppress(Exception):
+            self.approvals.abandon(scope, consulted.approval_ref)
 
     def _consume_claimed(self, scope: str, consulted: _Consulted | None) -> None:
         """Spend an execution behind a record that may have committed (article 3).

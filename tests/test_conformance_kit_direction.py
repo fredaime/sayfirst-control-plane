@@ -40,13 +40,13 @@ def test_the_dependency_between_distributions_points_one_way() -> None:
     """Article 14: the contract points at nothing; nothing shipped points at the kit."""
     kit = tomllib.loads((TESTING / "pyproject.toml").read_text(encoding="utf-8"))["project"]
     assert kit["dependencies"] == [
-        "sayfirst-contract==0.2.0",
-        "sayfirst-control-plane==0.2.0",
+        "sayfirst-contract==0.3.0",
+        "sayfirst-control-plane==0.3.0",
     ]
     server = tomllib.loads((CONTROL_PLANE / "pyproject.toml").read_text(encoding="utf-8"))[
         "project"
     ]
-    assert server["dependencies"] == ["sayfirst-contract==0.2.0"]
+    assert server["dependencies"] == ["sayfirst-contract==0.3.0"]
     assert _imports(TESTING / "src" / "sayfirst_testing") <= sys.stdlib_module_names | {
         "sayfirst_contract",
         "sayfirst_control_plane",

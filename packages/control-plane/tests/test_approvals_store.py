@@ -235,7 +235,11 @@ def test_the_same_question_finds_the_approval_it_suspended() -> None:
     """A re-ask of the suspended question finds its approval instead of opening a second."""
     store = _store()
     opened = store.open(_pending())
-    assert store.find_for_question(_question()) == opened
+    # Opened is not published: until the ask that minted it says so, the wait
+    # answers nobody, and the question reads as one nothing answers.
+    assert store.find_for_question(_question()) is None
+    published = store.publish("local", opened.approval_ref)
+    assert store.find_for_question(_question()) == published
 
 
 @pytest.mark.parametrize(
@@ -270,7 +274,8 @@ def test_the_most_recent_approval_for_a_question_is_the_last_one_opened() -> Non
             deadline=DEADLINE + timedelta(seconds=1),
         )
     )
-    last_opened = store.open(_pending("approval-1"))
+    store.publish("local", "approval-2")
+    last_opened = store.publish("local", store.open(_pending("approval-1")).approval_ref)
     found = store.find_for_question(_question())
     assert found == last_opened
     assert found is not None and found.requested_at < REQUESTED_AT + timedelta(seconds=1)
@@ -773,10 +778,16 @@ def test_an_approved_approval_nobody_spent_is_never_forgotten() -> None:
     store.claim("local", "approval-1")
     assert store.forget_lapsed(clock.now) == ()
     # Spent, and only then does the wait-length rule apply — counted from the
-    # act, which is where the record's own lifetime has always been measured.
+    # SPEND and not from the act. This record was approved a year ago on
+    # purpose: counting from the act would make the very first sweep after the
+    # spend forget it, and the caller that had just been granted the execution
+    # would read `approval_unknown` about the approval its own allow names.
+    spent_at = clock.now
     store.consume("local", "approval-1")
-    assert store.forget_lapsed(REQUESTED_AT + LAPSE - timedelta(seconds=1)) == ()
-    assert tuple(item.approval_ref for item in store.forget_lapsed(REQUESTED_AT + LAPSE)) == (
+    assert store.read("local", "approval-1").consumed_at == spent_at
+    assert store.forget_lapsed(REQUESTED_AT + LAPSE) == ()
+    assert store.forget_lapsed(spent_at + LAPSE - timedelta(seconds=1)) == ()
+    assert tuple(item.approval_ref for item in store.forget_lapsed(spent_at + LAPSE)) == (
         "approval-1",
     )
 
@@ -839,7 +850,10 @@ def test_forgetting_empties_the_question_index_and_not_only_the_record() -> None
     store.expire_past(DEADLINE)
     assert store.forget_lapsed(DEADLINE + LAPSE)
     assert store.find_for_question(_question()) is None
-    reopened = store.open(_pending(requested_at=DEADLINE, deadline=DEADLINE + LAPSE))
+    reopened = store.publish(
+        "local",
+        store.open(_pending(requested_at=DEADLINE, deadline=DEADLINE + LAPSE)).approval_ref,
+    )
     assert store.find_for_question(_question()) == reopened
 
 
@@ -1060,7 +1074,7 @@ def test_a_wait_nobody_took_up_is_dropped_from_both_indexes() -> None:
         store.read("local", "approval-1")
     # The reference is free again, which is the proof the question index let go
     # of it too: `open` refuses a reference it still holds.
-    reopened = store.open(_pending())
+    reopened = store.publish("local", store.open(_pending()).approval_ref)
     assert store.find_for_question(_question()) == reopened
 
 
@@ -1191,7 +1205,8 @@ def test_taking_up_a_wait_answers_the_suspension_the_core_keeps() -> None:
     assert kept.decision_ref == "decision-for-approval-1"
     assert kept.requested_at == REQUESTED_AT
     assert kept.deadline == DEADLINE
-    assert store.find_for_question(_question()) == kept
+    published = store.publish("local", "approval-1")
+    assert store.find_for_question(_question()) == published
 
 
 def test_resuming_through_the_core_answers_the_person_who_acted_and_records_it() -> None:

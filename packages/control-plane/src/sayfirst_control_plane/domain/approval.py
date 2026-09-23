@@ -83,11 +83,30 @@ class Approval:
     person: str | None = None
     resolution_reason: str | None = None
     consumed: bool = False
+    #: When the one execution this approval authorises was spent. A member and
+    #: not a derivation, because nothing else in this record holds it: an
+    #: approved approval nobody has spent is kept for the life of the process,
+    #: so the spend can be an hour after the act, and how long the record is
+    #: then kept is measured from the spend and not from the act. It was
+    #: measured from the act, and the first sweep after such a spend forgot the
+    #: record the caller had just been granted.
+    consumed_at: datetime | None = None
     #: Taken by one ask, before the decision that spends it is recorded. The
     #: claim is what makes « one resolution authorises one execution » hold
     #: between two asks running at once: a claimed approval answers no other
     #: question, and the ask that claimed it either spends it or gives it back.
     claimed: bool = False
+    #: Whether anybody outside the ask that minted this wait has been told it
+    #: exists. A wait is *opened* before its provider has taken it up and
+    #: before the suspended decision naming it is committed, and in that window
+    #: it belongs to that one ask: no other ask may be answered with it, and the
+    #: ask that opened it may still withdraw it. It becomes published when both
+    #: of those have happened — or when a person acts on it, because an act is
+    #: itself somebody outside having been told (`ApprovalStore.publish` and
+    #: `ApprovalStore.resolve`). The distinction is not decoration: answering a
+    #: second ask with a wait still being opened published a reference to a wait
+    #: the first ask then abandoned, behind a decision that stayed committed.
+    published: bool = False
 
     def __post_init__(self) -> None:
         for member in ("requested_at", "deadline"):
@@ -114,6 +133,34 @@ class Approval:
             raise ValueError(
                 "a consumed approval was claimed first: the one execution is taken before "
                 "it is spent, so a record that was spent and never claimed is one no ask made"
+            )
+        self._hold_the_spend()
+
+    def _hold_the_spend(self) -> None:
+        """`consumed_at` is there exactly when the execution was taken, and never before the act.
+
+        Article 2 on both sides: a spend with no instant is a fact the record
+        cannot date, and an instant with no spend dates something that did not
+        happen. The lower bound is the resolution, because the execution an
+        approval authorises is taken after the person authorised it; there is
+        no upper bound, and that is the point — an approved approval nobody has
+        spent is kept past its deadline on purpose.
+        """
+        consumed_at = self.consumed_at
+        if not self.consumed:
+            if consumed_at is not None:
+                raise ValueError(
+                    "an unspent approval carries no consumed_at: nothing took its execution"
+                )
+            return
+        if consumed_at is None:
+            raise ValueError("a consumed approval carries the instant its execution was taken")
+        if consumed_at.tzinfo is None or consumed_at.utcoffset() is None:
+            raise ValueError("an approval's consumed_at must be offset-aware")
+        if self.resolved_at is not None and consumed_at < self.resolved_at:
+            raise ValueError(
+                "an approval's consumed_at cannot precede its resolved_at: "
+                "the execution is taken after the act that authorised it"
             )
 
     def _hold_the_end_of_the_wait(self) -> None:

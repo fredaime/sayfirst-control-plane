@@ -250,9 +250,9 @@ def _verify(
     Run as `test_the_chain_governs_a_program.py` runs `instrument run`, in the
     environment that module composes: `-c "from sayfirst_cli.main import run;
     run()"` and never `-m sayfirst_cli.main`, for the reason it gives beside
-    its own invocation — the second form supplies the working directory as the
-    head of the import path, which is the very thing the launcher under test
-    has to supply itself.
+    its own invocation — the first calls what the console script calls, and
+    the second, on a checkout from before the module's `__main__` guard, ran
+    nothing and exited 0.
     """
     argv = [
         sys.executable,

@@ -214,7 +214,26 @@ class DecisionRoutes:
             writer.document(problem.to_document(), status=500)
             return problem
         document = decision.to_document()
-        document.pop("approval_ref", None)
+        # The grant goes and the approval's reference stays, and the two are
+        # not the same call. A grant is a capability: its document is the
+        # credential the answer to an *ask* carried, on the connection that
+        # issued it, and serving it again to whoever reads the decision later
+        # would hand that credential to a reader entitled only to the record
+        # (article 10).
+        #
+        # `approval_ref` is a reference, not a credential and not a person. It
+        # was dropped here because the published `decision-record` had no such
+        # member and a reader of an older generation raised on one; the reader
+        # now takes it where it is offered and `null` where it is not
+        # (`Decision.from_document`), and the schema admits it. Dropping it cost
+        # the one durable statement that this allow was taken on that person's
+        # act: the raw record keeps the reference, but the raw record is
+        # daemon-private, so a reader holding only the published surface could
+        # not follow a resumed decision back to the wait that justified it once
+        # the in-memory approval was forgotten (article 2, and
+        # `docs/deployment.md` « Who may resolve a suspended effect »). Who
+        # acted is not here and is not added: that is on the approval record,
+        # which `read_approval` serves, and which this reference names.
         document.pop("grant", None)
         writer.document(document)
         return decision

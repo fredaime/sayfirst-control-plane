@@ -45,14 +45,25 @@ def _assignments(values: Sequence[str], label: str) -> Mapping[str, str]:
     return result
 
 
+#: The whole-run verdict as an exit status: the same three the conformance
+#: command gives, so the two spellings of one replay never disagree about a run.
+EXIT_FOR_VERDICT: dict[str, int] = {"proven": 0, "failed": 1, "unknown": 3}
+
+
 def render(report: Report, stream: TextIO) -> None:
-    """Write one stable line per scenario and the whole-run result."""
+    """Write one stable line per scenario and the whole-run result.
+
+    The whole-run line is the report's own verdict. A run that replayed nothing
+    wrong but did not replay every bound scenario is unknown — neither a proof
+    nor a failure of what was replayed (article 2) — and it used to be written
+    as failed here while the conformance command wrote unknown for the same run.
+    """
     for item in report.scenarios:
         stream.write(f"{item.name}\t{item.verdict.value}\t{item.detail}\n")
-    if reason := report.failure_reason():
-        stream.write(f"run\tfailed\t{reason}\n")
-    else:
+    if report.succeeded():
         stream.write(f"run\tproven\t{len(report.proven())} scenarios proven\n")
+    else:
+        stream.write(f"run\t{report.verdict.value}\t{report.failure_reason()}\n")
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -124,10 +135,11 @@ def main(arguments: Sequence[str] | None = None, *, stdout: TextIO | None = None
             expected_absent=expected_absent,
         )
     except ValueError as exc:
-        output.write(f"run\tfailed\t{exc}\n")
+        # Nothing was replayed: what the run would have shown is not known.
+        output.write(f"run\tunknown\tinvalid invocation: {exc}\n")
         return 2
     render(report, output)
-    return 0 if report.succeeded() else 1
+    return EXIT_FOR_VERDICT[report.verdict.value]
 
 
 if __name__ == "__main__":

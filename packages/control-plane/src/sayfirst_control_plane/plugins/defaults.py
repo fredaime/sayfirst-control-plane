@@ -88,6 +88,16 @@ def _store_backed_approver() -> object:
     The import is inside the call because the provider lives in the
     application layer, which imports this package's port declarations: a
     module-level import here would make the two import each other.
+
+    What this factory builds is held to the published conformance kit of
+    article 8 **as a pair**, not alone: it takes up a wait the core has already
+    opened and it ends none itself, so the kit — which drives a provider that
+    opens and ends its own suspension — is run against it with the core's two
+    writes supplied around it. That is a relaxation of one word of the article
+    and it is registered: entry 5 of `docs/exceptions.md`, with the reason, the
+    evidence and the way back. It is the registered default that is certified,
+    not `SingleApprover` above: the example passes the kit unassisted, and the
+    example is not what any daemon composes.
     """
     from ..application.approvals import SimpleApprovalProvider
 

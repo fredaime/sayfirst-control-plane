@@ -153,3 +153,65 @@ it, as it is not by the policy authority's own per-connection check, so the
 file's permissions and not this refusal are what protect the file. Article 8's
 Guard names the mechanism in place of its admission. The new code is announced
 in `CHANGELOG.md`.
+
+## 5 — The core's own approval provider is certified as a pair, not alone
+
+**Opened.** 2026-09-20.
+
+**Article relaxed.** Article 8: "The project ships a conformance kit,
+`sayfirst.testing`, with a contract test suite per port; a provider that does
+not pass it is not a provider."
+
+**Named surface.** One registration — `SINGLE_APPROVER_REGISTRATION` in
+`plugins/defaults.py`, whose factory builds `SimpleApprovalProvider` from
+`application/approvals.py` — and nothing else. Every provider written
+elsewhere, and both shipped privacy providers, are put to the published suite
+whole and unassisted. What is relaxed is *alone*, not *passes*: this provider
+is run against the unchanged published kit, with the two writes the core does
+for it in the daemon supplied around it, and it passes.
+
+**Stated reason.** the published kit drives a provider that **opens** its own
+suspension and **ends** it; the registered one does neither, and cannot be made
+to do either without taking authority the core holds. It cannot open, because
+what makes a re-ask the same ask — the connection's principal reference and the
+ask's arguments digest — is the `Question` inside the core's record and is not a
+member of `ApprovalRequest`; a provider opening its own wait would have to
+invent both, which moves the authority over what a re-ask is matched by out of
+the core (article 3), and a wait opened under an invented question is a wait no
+re-ask finds and a second human asked for an effect already approved. It cannot
+end, because the one writer of a resolution is `write_resolution` under the
+store's lock (article 12), and refusing a second act on a resolved approval —
+which the kit requires of a provider on its own — means holding that state in
+the provider, which is the defect that writer exists to fix: a provider from
+elsewhere left the wait pending after answering a person, and the act was
+recorded and then discarded. So passing the unchanged kit unassisted requires
+exactly the two moves this divergence was found by, and both are worse than the
+divergence.
+
+**Compensating evidence.** The unchanged kit is run against the object the
+registration's own factory builds, with the core's two writes supplied around
+it:
+`packages/control-plane/tests/test_default_providers.py::test_the_two_open_providers_pass_the_published_contract_suites`.
+Nothing of the kit is relaxed for it — every act goes through the same guarded
+seam and the same derivation rule, the forged suspension the kit never issued
+is refused, the approve and the reject case are each driven through the whole
+fixture, and a second act on a terminal approval is refused. What the provider
+cannot do alone is held at exactly the two boundaries, so a change that quietly
+moved either write into the provider fails:
+`test_the_registered_provider_alone_stops_at_the_two_writes_the_core_owns`.
+This entry is named by
+`test_the_exception_register_records_why_the_registered_provider_is_certified_as_a_pair`,
+which fails when the entry is removed or closed while the divergence stands. The
+provider's own behaviour is held besides by `tests/test_approvals_store.py`,
+`tests/test_approval_routes.py` and `tests/test_decisions_approvals.py`.
+
+**Restoration condition.** The exception ends when the port carries a published
+shape for a provider that takes up a wait its core keeps — the kit given a
+published seam through which the core's opening and its writer are supplied, in
+place of the fixture a test holds today, or a second interface version whose
+request carries the question. From that generation on the registered provider is
+run against the published suite through that seam like any other, the fixture in
+`test_default_providers.py` becomes the published one, and this entry is removed
+in the same change. Until then the relaxation is one word wide — *alone* — and
+an inability to keep this way back is an amendment under article 16, never an
+indefinite waiver.

@@ -6,10 +6,20 @@ types. It inspects; it starts nothing.
 
 ```console
 sayfirstd plugins list --config /etc/sayfirst/plugins.toml
-sayfirstd whoami --socket /run/sayfirst/daemon.sock
-sayfirstd status --socket /run/sayfirst/daemon.sock
+sayfirstd whoami --socket /run/sayfirst/daemon.sock --mode system --daemon-user sayfirst
+sayfirstd status --socket /run/sayfirst/daemon.sock --mode system --daemon-user sayfirst
 sayfirstd conformance replay --socket allow=/run/conformance/allow.sock
 ```
+
+`whoami` and `status` take `--socket` as an option: given none, a per-user
+profile is looked for at the per-user default address — the one a per-user
+daemon given no address serves at, `sayfirst-daemon up --quickstart` included —
+so `sayfirstd status` alone asks that daemon. A system profile always names its
+socket and the account the daemon runs as, as the two lines above do for a
+system daemon running as `sayfirst`. Without `--mode system --daemon-user`, a
+profile is per-user: it expects the daemon to run as the account asking, and a
+system daemon at that address is refused as `server_not_the_daemon_principal`
+before a byte is sent (exit `4`).
 
 ## The three names
 

@@ -36,14 +36,14 @@ constitution's claim and not the document's, so a quoted passage is exempt; and
 a dated design note under `docs/specs/` records a decision as it stood on its
 own date, which a later decision does not falsify, so the specs are outside the
 scan. What is inside it and still disagrees is named in `AMENDED_ELSEWHERE`:
-the constitution's Rule of article 7, the security policy, and article 8's
-Guard still write the caller's grade and the plugin listing as `sayfirst`;
-articles 6 and 11's Guards each name that spelling once more, to say precisely
-that it is the product client's and not the surface being held. A
-repository-scope document is amended by a change of its own, never from a
-block branch (`CONTRIBUTING.md`). The list is an admission with an owner, not
-a silence: any other document that claims the product command fails this
-guard by name.
+the constitution's Rule of article 7 and article 8's Guard still write the
+caller's grade and the plugin listing as `sayfirst`; articles 6 and 11's Guards
+each name that spelling once more, to say precisely that it is the product
+client's and not the surface being held. A repository-scope document is amended
+by a change of its own, never from a block branch (`CONTRIBUTING.md`), and the
+constitution only by the procedure of its article 16. The list is an admission
+with an owner, not a silence: any other document that claims the product
+command fails this guard by name.
 
 The names are read from the `[project]` tables and from the source tree, the way
 `tests/test_decided_name.py` reads them, and every rule is proven against a
@@ -93,10 +93,11 @@ NAMESPACE_PORTION = Path("packages") / "control-plane" / "src" / "sayfirst"
 PRODUCT_COMMAND = "sayfirst"
 
 #: The documents that still write the command of articles 6, 7, 8 and 11 as the
-#: product's. Both are repository-scope documents: they are amended by a change
-#: that names them, never from a block branch, so this guard records them as
-#: outstanding rather than passing over them in silence.
-AMENDED_ELSEWHERE: frozenset[str] = frozenset({"CONSTITUTION.md", "SECURITY.md"})
+#: product's: the constitution alone, since the security policy was amended to
+#: name `sayfirstd status`. It is a repository-scope document, amended by a
+#: change that names it and never from a block branch, so this guard records it
+#: as outstanding rather than passing over it in silence.
+AMENDED_ELSEWHERE: frozenset[str] = frozenset({"CONSTITUTION.md"})
 
 #: The sentences by which a document says a name belongs to another repository,
 #: assembled from pieces so that this guard is not itself an occurrence of what
@@ -335,7 +336,7 @@ def test_the_conformance_distribution_claims_no_operator_facing_name() -> None:
     assert "scripts" not in contract
     assert conformance["name"] == "sayfirst-conformance"
     assert conformance["scripts"] == {"sayfirst-conformance": "sayfirst_conformance.main:main"}
-    assert conformance["dependencies"] == ["sayfirst-contract==0.2.0"]
+    assert conformance["dependencies"] == ["sayfirst-contract==0.3.0"]
     assert _imports(CONFORMANCE / "src" / "sayfirst_conformance") <= sys.stdlib_module_names | {
         "sayfirst_contract",
         "sayfirst_conformance",

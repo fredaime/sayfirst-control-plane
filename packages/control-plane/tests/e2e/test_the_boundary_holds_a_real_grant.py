@@ -28,7 +28,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 import pytest
-from _daemon import ALLOW, ARGUMENTS, DENY, REPOSITORY, SOURCES, SUSPEND, _Daemon, _rule
+from _daemon import ALLOW, ARGUMENTS, CLIENT_REPO, DENY, SOURCES, SUSPEND, _Daemon, _rule
 from sayfirst_boundary import CouldNotAsk, Denied, Suspended
 from sayfirst_boundary.errors import AskRefused
 from sayfirst_contract.binding.http_unix_socket.client import SocketClient, _UnixConnection
@@ -262,11 +262,11 @@ def test_the_ending_signal_names_its_reason(daemon) -> None:  # type: ignore[no-
         channel.close()
 
 
-#: The open command-line client lives in its own repository, beside this one.
-#: It is invoked as a SUBPROCESS rather than imported: the client depends on the
-#: contract and never on the server (article 13), and a process boundary is the
-#: honest way to exercise it from here without pretending otherwise.
-CLIENT_REPO = REPOSITORY.parent / "sf-cli-lt"
+# The open command-line client lives in its own repository, beside this one:
+# `CLIENT_REPO`, found by `_daemon.client_checkout`. It is invoked as a
+# SUBPROCESS rather than imported: the client depends on the contract and never
+# on the server (article 13), and a process boundary is the honest way to
+# exercise it from here without pretending otherwise.
 
 
 @pytest.mark.skipif(
@@ -301,9 +301,11 @@ def test_the_published_client_asks_the_real_daemon(daemon, capability, code, wor
         [
             sys.executable,
             # The published entry point is the console script, which resolves to
-            # `main:run`. `-m sayfirst_cli.main` imports the module and exits 0
-            # in silence — there is no `__main__` guard — so invoking it that way
-            # would test nothing while looking like a pass.
+            # `main:run`, and this calls exactly that. `-m sayfirst_cli.main`
+            # would too on a client whose module has its `__main__` guard, but a
+            # checkout from before that guard imports the module and exits 0 in
+            # silence — a test of nothing that looks like a pass — so the case
+            # does not depend on which checkout sits beside this repository.
             "-c",
             "from sayfirst_cli.main import run; run()",
             "ask",
@@ -327,8 +329,7 @@ def test_the_published_client_asks_the_real_daemon(daemon, capability, code, wor
 # The second walk. Each case below names, in its docstring, the change to the
 # PRODUCT that would make it fail; a case that survives its own mutation is a
 # case that measures nothing, and every one of these was mutated once before
-# it was trusted. The plan behind them was reviewed twice before a line was
-# written, and every finding was checked against the source before adoption.
+# it was trusted.
 # ---------------------------------------------------------------------------
 
 #: The absolute value `packages/boundary/tests/test_digest.py` pins for this

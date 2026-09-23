@@ -9,9 +9,10 @@ that never happens without the record that explains it (article 3).
 
 from __future__ import annotations
 
+import json
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
-from threading import Barrier
+from threading import Barrier, Event
 
 import pytest
 from sayfirst.testing.approval import ApprovalProviderContract
@@ -19,6 +20,7 @@ from sayfirst_contract.decisions import Decision, DecisionAsk, Outcome, Reason
 from sayfirst_contract.generation import CONTRACT_GENERATION
 from sayfirst_contract.problems import ProblemCode
 from sayfirst_control_plane.adapters.api.approval_routes import ApprovalRoutes
+from sayfirst_control_plane.adapters.api.decision_routes import DecisionRoutes
 from sayfirst_control_plane.adapters.file.policy_store import FilePolicyStore
 from sayfirst_control_plane.adapters.memory.decision_store import MemoryDecisionStore
 from sayfirst_control_plane.adapters.memory.policy_projection import MemoryPolicyProjection
@@ -46,6 +48,7 @@ from sayfirst_control_plane.ports.policy_store import (
     ProtectionState,
     ProtectionVerdict,
 )
+from sayfirst_testing.schemas import validate_document
 
 START = datetime(2026, 9, 15, 12, tzinfo=UTC)
 DIGEST = "sha256:" + "1" * 64
@@ -823,3 +826,280 @@ def test_one_act_is_written_to_the_store_exactly_once(tmp_path, provider, monkey
     _resolve_through_the_route(service, reference)
 
     assert written == [("local", reference)]
+
+
+# -- the lifecycle of one wait: opened, published, committed, spent, forgotten -
+
+
+def test_a_wait_another_ask_is_still_opening_is_never_published_by_this_one(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    """Articles 2, 3 and 12: a reference a caller is answered names a wait that exists.
+
+    A wait has a state before it has a person: it is *opened* in the store, and
+    it is *published* only once the provider has taken it up and the suspended
+    decision naming it is committed. Between those two instants it belongs to
+    the ask that minted it and to nothing else.
+
+    The gap that was there answered a second ask with it. That second ask
+    skipped the provider, committed its own suspended decision and returned the
+    reference; the first ask's provider then failed, the wait was abandoned, and
+    the reference the second caller had been told to wait on read
+    `approval_unknown` behind a decision that stayed committed — a suspension
+    published on a wait nobody holds and no provider ever received.
+
+    A wait still being opened is contention, not an answer: nobody failed, this
+    ask decided nothing, and its retry either finds the published wait or opens
+    one of its own.
+    """
+    entered, release = Event(), Event()
+
+    class Blocking:
+        """A provider that is inside `suspend` while the second ask runs."""
+
+        def __init__(self) -> None:
+            self.calls: list[str] = []
+
+        def suspend(self, request: ApprovalRequest) -> object:
+            self.calls.append(request.approval_ref)
+            entered.set()
+            assert release.wait(5)
+            raise RuntimeError("this provider is not answering today")
+
+        def resume(self, suspended: object, action: object) -> object:
+            raise AssertionError("this case drives suspend only")
+
+    provider = Blocking()
+    service, approvals, decisions, _ = _service(tmp_path, provider=provider)
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        opening = pool.submit(service.ask, _question())
+        assert entered.wait(5)
+        try:
+            second = service.ask(_question())
+        finally:
+            release.set()
+        first = opening.result(5)
+
+    assert isinstance(first, DecisionProblem)
+    assert first.problem.code is ProblemCode.APPROVAL_PROVIDER_UNAVAILABLE
+    assert isinstance(second, DecisionProblem)
+    assert second.problem.code is ProblemCode.DECISION_CONTENDED
+    assert second.problem.retryable is True
+    # The provider saw one request, and the ask that never reached it published
+    # nothing: no record, and no wait left behind for anyone to answer.
+    assert len(provider.calls) == 1
+    assert approvals.pending() == ()
+    assert approvals.find_for_question(_the_question()) is None
+    assert _records_of(decisions) == ()
+
+
+def test_a_first_append_that_never_committed_leaves_no_wait_behind(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    """Article 3: no kept approval references a decision the authority never held.
+
+    The sequential half of the same boundary. The provider takes up the wait
+    this ask opened, and the decision store then refuses the first append
+    before its first byte: nothing committed, and nothing could have. The wait
+    was never published, so it goes with the ask that opened it — otherwise the
+    retry the retryable answer invites finds it pending, suspends on it, and
+    the record a reader follows from that approval names a decision nobody can
+    read.
+    """
+    service, approvals, decisions, _ = _service(tmp_path)
+    service.decisions = _Refuses(decisions)
+    first = service.ask(_question())
+    assert isinstance(first, DecisionProblem)
+    assert first.problem.code is ProblemCode.DECISION_STORE_UNAVAILABLE
+    assert approvals.pending() == ()
+    assert approvals.find_for_question(_the_question()) is None
+
+    service.decisions = decisions
+    second = _answered(service)
+    assert second.decision.outcome is Outcome.SUSPEND
+    reference = second.decision.approval_ref
+    assert reference is not None
+    kept = approvals.read("local", reference)
+    assert kept.decision_ref == second.decision.decision_ref
+    # The reference a reader follows out of the approval reaches a record.
+    assert decisions.get("local", kept.decision_ref) is not None
+
+
+def test_a_record_spent_long_after_the_act_is_kept_a_wait_length_from_the_spend(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    """Article 2: the record a caller just spent is readable, not `approval_unknown`.
+
+    Retention is measured from the transition that ended a record's usefulness,
+    and for a spent approval that transition is the spend. An approved approval
+    nobody has spent is kept for the life of the process on purpose, so it can
+    be spent an hour after the act; measuring its retention from the *act*
+    meant the very first sweep after that spend forgot it, and the caller that
+    had just been granted the execution read `approval_unknown` about the
+    approval its own allow names.
+
+    Two instants, so the case says which one it is about: the act at the head
+    of the wait, and the spend two wait-lengths later.
+    """
+    service, approvals, _, clock = _service(tmp_path)
+    reference = _suspended(service, approvals)
+    _resolve(approvals, reference, clock, ApprovalResolution.APPROVE)
+    clock.advance(2 * WAIT)
+    answer = _answered(service)
+    assert answer.decision.outcome is Outcome.ALLOW
+    assert answer.decision.approval_ref == reference
+
+    service.sweep()
+    kept = approvals.read("local", reference)
+    assert kept.state is ApprovalState.APPROVED and kept.consumed is True
+    # And it is not kept for ever either: one wait-length after the spend, the
+    # sweep forgets it, which is the rule the store publishes.
+    clock.advance(WAIT)
+    service.sweep()
+    with pytest.raises(ApprovalUnknown):
+        approvals.read("local", reference)
+
+
+def test_a_record_forgotten_between_the_look_and_the_claim_is_a_lookup_race(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    """Articles 1 and 2: an ordinary race answers; it does not escape as a server failure.
+
+    The store is an authority that forgets. An ask can therefore find an
+    approved, unspent record and, an instant later, claim a reference the sweep
+    has taken out from under it — because another ask spent it in between and
+    the record then lapsed. `ApprovalUnknown` there is not a fault and not a
+    fourth answer: it means « what I found is no longer there », and the answer
+    to that is to look again. Letting it out of `ask` turned a contention into
+    an internal server error nobody could classify.
+    """
+    service, approvals, decisions, clock = _service(tmp_path)
+    reference = _suspended(service, approvals)
+    _resolve(approvals, reference, clock, ApprovalResolution.APPROVE)
+    claim = approvals.claim
+
+    def spent_and_forgotten(scope: str, approval_ref: str):  # type: ignore[no-untyped-def]
+        """What another ask and a later sweep do between this ask's look and its claim."""
+        approvals.claim = claim  # this ask's next look claims for real
+        claim(scope, approval_ref)
+        approvals.consume(scope, approval_ref)
+        assert approvals.forget_lapsed(clock.now + timedelta(seconds=2 * WAIT))
+        return claim(scope, approval_ref)
+
+    approvals.claim = spent_and_forgotten  # type: ignore[method-assign]
+    answer = service.ask(_question())
+    assert isinstance(answer, DecisionAnswer)
+    # The act was spent by the other ask, so this question is unanswered again:
+    # a wait of its own, and a reference that is not the spent one.
+    assert answer.decision.outcome is Outcome.SUSPEND
+    assert answer.decision.reason is Reason.POLICY_REQUIRES_REVIEW
+    assert answer.decision.approval_ref not in (None, reference)
+    assert decisions.get("local", answer.decision.decision_ref) is not None
+
+
+def test_an_append_whose_receipt_cannot_be_read_does_not_give_the_act_back(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    """Article 3, fail closed: failure to read a receipt does not establish failure to commit.
+
+    A third shape of append failure, between the two this service already
+    tells apart. The store took the record — it is committed and readable —
+    and then answered with something that is not a position. Reading the
+    receipt raises *after* the write, so a handler that treats every raise
+    around the append as « refused before the first byte » gives the claim
+    back; the caller retries on the same approval and a second allow is
+    committed on one person's act, which is the outcome the claim exists to
+    forbid.
+
+    The receipt is still validated: a position this core cannot own is not
+    rendered to a caller. What changes is what the uncertainty costs — the
+    execution is spent, exactly as for an append that cannot say whether it
+    committed, and the answer stays the retryable could-not-ask.
+    """
+    service, approvals, decisions, clock = _service(tmp_path)
+    reference = _suspended(service, approvals)
+    _resolve(approvals, reference, clock, ApprovalResolution.APPROVE)
+
+    class Unreadable:
+        """The record commits; the receipt the store answers with is not a position."""
+
+        VERSION = 1
+
+        def append(self, decision):  # type: ignore[no-untyped-def]
+            decisions.append(decision)
+            return None
+
+        def get(self, scope, decision_ref):  # type: ignore[no-untyped-def]
+            return decisions.get(scope, decision_ref)
+
+        def location(self):  # type: ignore[no-untyped-def]
+            return decisions.location()
+
+    service.decisions = Unreadable()
+    before = service.grants._reserved_total
+    answer = service.ask(_question(), grant_connection=True)
+    assert isinstance(answer, DecisionProblem)
+    assert answer.problem.code is ProblemCode.DECISION_STORE_UNAVAILABLE
+    assert answer.problem.retryable is True
+    # The reservation a committed-but-unanswerable decision took is released.
+    assert service.grants._reserved_total == before
+    kept = approvals.read("local", reference)
+    assert kept.consumed is True
+    assert approvals.find_for_question(_the_question()) is None
+
+    service.decisions = decisions
+    again = service.ask(_question(), grant_connection=True)
+    assert isinstance(again, DecisionAnswer)
+    assert again.decision.outcome is Outcome.SUSPEND
+    assert again.decision.reason is Reason.POLICY_REQUIRES_REVIEW
+    assert again.decision.approval_ref not in (None, reference)
+    # One act, one committed allow, counted over everything the authority holds.
+    allows = [
+        record
+        for record in _records_of(decisions)
+        if record.outcome is Outcome.ALLOW and record.approval_ref == reference
+    ]
+    assert len(allows) == 1
+
+
+def test_a_resumed_decision_publishes_the_reference_it_was_resumed_on(tmp_path) -> None:  # type: ignore[no-untyped-def]
+    """Articles 2 and 12: the link between an act and the decision it authorised is readable.
+
+    The resumed decision carries `approval_ref` in the live answer and in the
+    record the authority keeps, and the public read then dropped it — so the
+    one durable statement that *this* allow was taken on *that* person's act
+    was daemon-private, and a reader holding only what the binding serves could
+    not recover it once the in-memory approval was forgotten.
+
+    What is published is the reference and only the reference. The person who
+    acted is on the approval record, where `read_approval` renders it and where
+    the deployment document says it lives; the decision names the wait, never
+    the human (`docs/deployment.md`, « Who may resolve a suspended effect »).
+    """
+    service, approvals, _, clock = _service(tmp_path)
+    reference = _suspended(service, approvals)
+    _resolve(approvals, reference, clock, ApprovalResolution.APPROVE)
+    resumed = _answered(service)
+    assert resumed.decision.outcome is Outcome.ALLOW
+    assert resumed.decision.approval_ref == reference
+
+    document = _read_through_the_route(service, resumed.decision.decision_ref)
+    assert document["approval_ref"] == reference
+    validate_document(document, "decision-record")
+    # The reference, and not the person: nothing of who acted is served here.
+    assert PERSON not in json.dumps(document)
+    # Both halves of the pair read the same way, which is what makes the link
+    # followable from either end: the suspension that opened the wait names it
+    # too, and a decision no approval resumed says `null` rather than nothing.
+    suspension = _read_through_the_route(service, approvals.read("local", reference).decision_ref)
+    assert suspension["approval_ref"] == reference
+    assert suspension["outcome"] == "suspend"
+
+
+def _read_through_the_route(service: DecisionService, decision_ref: str) -> dict:  # type: ignore[type-arg]
+    """The document the binding actually serves for a decision read.
+
+    Written through `DecisionRoutes`, which is where the rendering that drops
+    members lives; a test that read the store directly would never see it.
+    """
+
+    class Wire:
+        def __init__(self) -> None:
+            self.raw = b""
+
+        def sendall(self, raw: bytes) -> None:
+            self.raw += raw
+
+    wire = Wire()
+    DecisionRoutes(service).read_decision("local", decision_ref, wire)  # type: ignore[arg-type]
+    return json.loads(wire.raw.split(b"\r\n\r\n", 1)[1])

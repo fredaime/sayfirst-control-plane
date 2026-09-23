@@ -65,11 +65,29 @@ class Boundary:
         *,
         client: _Client,
         principal_reference: str,
+        correlation: str | None = None,
         log: OutcomeLog | None = None,
         clock: Callable[[], datetime] | None = None,
+        hold_grants: bool = True,
     ) -> None:
         self._client = client
         self._principal = principal_reference
+        # Article 10's cache: an allow minted a grant, and an identical later act
+        # is answered by it without a round trip. A boundary that holds none asks
+        # for every act instead — what a verifier needs, since its proof is one
+        # recorded decision for each effect it saw and a grant hit records
+        # nothing. Asking more often is always allowed; never asking less is the
+        # rule the cache itself keeps.
+        self._hold_grants = hold_grants
+        # One boundary is one execution, so a correlation set here is stamped on
+        # every ask this boundary puts, and the plane records it on the effect
+        # (`correlation_source: boundary_supplied`). It is how a later reader —
+        # the verifier above all — tells THIS run's records from another
+        # execution's of the same principal, without trusting the boundary for a
+        # connection identity. It is not part of a grant's key (a grant matches
+        # on scope, principal, capability and digest), so a constant correlation
+        # across a run leaves the cache exactly as it was.
+        self._correlation = correlation
         self._clock = clock or (lambda: datetime.now(UTC))
         self._store = GrantStore()
         self._log = log or OutcomeLog(capacity=1024, sink=lambda record: None, clock=self._clock)
@@ -82,13 +100,26 @@ class Boundary:
         *,
         scope: str = "local",
     ) -> Iterator[GrantHandle]:
+        try:
+            digest = arguments_digest(arguments)
+        except (TypeError, ValueError, RecursionError) as error:
+            # UnicodeEncodeError is a ValueError: a path that is not UTF-8, which
+            # `os.fsdecode` leaves as a lone surrogate. The digest is how the
+            # question is put, so arguments it cannot describe are a question
+            # that was not asked — one of this boundary's four outcomes, and the
+            # body does not run.
+            raise CouldNotAsk(
+                detail=f"the effect's arguments cannot be described to the control plane: {error}",
+                retryable=False,
+            ) from error
         ask = DecisionAsk(
             capability=capability,
             scope=scope,
-            arguments_digest=arguments_digest(arguments),
+            arguments_digest=digest,
+            correlation=self._correlation,
         )
         now = self._clock()
-        held = self._store.take(ask, self._principal, now=now)
+        held = self._store.take(ask, self._principal, now=now) if self._hold_grants else None
         decision_ref = held.held().grant.decision_ref if held is not None else self._ask(ask)
         handle = GrantHandle(decision_ref=decision_ref, capability=capability, _log=self._log)
         try:
@@ -114,7 +145,7 @@ class Boundary:
             # boundary reports that rather than deciding for itself.
             raise CouldNotAsk(
                 detail=str(result.problem.message),
-                retryable=bool(result.problem.retryable),
+                retryable=result.problem.retryable,
             )
         if not isinstance(result, Answered):
             raise CouldNotAsk(detail="the answer could not be read", retryable=False)
@@ -133,8 +164,17 @@ class Boundary:
                 decision_ref=decision.decision_ref,
                 capability=decision.capability,
             )
-        if stream is not None and getattr(stream, "grant", None) is not None:
-            self._store.put(SignalReader(stream, clock=self._clock))
+        if self._hold_grants and stream is not None and getattr(stream, "grant", None) is not None:
+            try:
+                reader = SignalReader(stream, clock=self._clock)
+            except Exception:
+                # The allow was answered and recorded, and this act runs on it.
+                # A grant that cannot be held only means the next identical act
+                # asks again; keeping the connection with nothing reading it
+                # would be the leak.
+                self._close(stream)
+            else:
+                self._store.put(reader)
         else:
             self._close(stream)
         return decision.decision_ref

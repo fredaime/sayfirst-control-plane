@@ -86,7 +86,15 @@ LINUX_ONLY = {
     "test_a_chain_already_in_the_store_for_a_scope_no_rule_names_refuses_the_start_by_name",
     "test_a_decision_in_a_scope_no_rule_names_is_recorded_on_a_chain_created_on_first_use",
 }
-DARWIN_ONLY = {"test_peer_credentials_are_read_through_the_darwin_adapter"}
+DARWIN_ONLY = {
+    "test_peer_credentials_are_read_through_the_darwin_adapter",
+    # macOS's own extended access lists, set with its own `chmod +a` and read
+    # through its C library: no other platform has either, so only the macOS
+    # runner can hold what the access walk makes of them.
+    "test_a_policy_on_a_path_with_no_list_is_judged_on_macos",
+    "test_a_list_of_denials_leaves_the_answer_definite_on_macos",
+    "test_a_list_that_allows_something_is_never_read_as_protected_on_macos",
+}
 
 # -- the second axis: which privilege can hold a guard, not which platform ----
 #
@@ -144,6 +152,9 @@ ROOT_ONLY = {
 # suite as root; neither is a convenience gate.
 UNPRIVILEGED_ONLY = {
     "test_the_per_user_daemon_refuses_root_over_the_wire",
+    # The quickstart is one ordinary account's first run and refuses root by
+    # design, so a root tester has no daemon to start and stop.
+    "test_down_stops_the_daemon_up_started_on_this_platform",
     "test_the_directory_check_uses_the_account_the_daemon_will_run_as",
     # System mode refuses to start below uid 0; there is no such refusal to
     # drive when the tester is uid 0.
