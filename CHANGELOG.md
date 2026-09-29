@@ -8,6 +8,23 @@ that this file does not announce under its own release fails the packaging test.
 
 ## Unreleased
 
+## 0.3.1
+
+- The published replay harness asks for the answer without the event stream where a
+  scenario scripts `signal_channel: false`, so a conforming daemon proves
+  `no_grant_without_signal_channel` through both replay commands.
+- `sayfirst-conformance replay` and `sayfirstd conformance replay` take
+  `--change-policy-command` (and `--change-policy-timeout`): a complete command-line run
+  can now be proven. A socket for the policy-change scenario without the command is an
+  invalid invocation. The command is given empty standard input, so one that reads it never
+  waits on the terminal, and output it prints that is not UTF-8 still fails with its status.
+- A daemon that cannot remove its socket on a clean stop says so
+  (`socket_left_behind`); in system mode the next start clears it, as before.
+- `sayfirst-testing` declares `pytest`, which two of its modules import, and declares
+  `referencing` in its `schemas` extra.
+- The README's rejection sentence and third command, the replay arrangement and the
+  deployment guide's clean stop are corrected.
+
 ## 0.3.0
 
 - **`sayfirst-daemon up --quickstart` and `sayfirst-daemon down`.** `up --quickstart` writes a

@@ -70,6 +70,18 @@ class _SocketSession:
         pass
 
 
+class _DocumentSocketClient(SocketClient):
+    """The published client, asking for the answer that carries no grant channel.
+
+    The binding publishes one selector over two media types, and a scenario that scripts
+    `signal_channel: false` scripts the request that selects the document. The selection
+    is made by the class member the client itself reads, never by a second request
+    written beside it (article 13).
+    """
+
+    DECISION_ACCEPT = SocketClient.DOCUMENT_ACCEPT
+
+
 class SocketHarness:
     """Arrange each scenario against its explicitly configured daemon socket.
 
@@ -107,8 +119,11 @@ class SocketHarness:
             socket_path = self.socket_paths[scenario.name]
         except KeyError as exc:
             raise LookupError(f"no daemon socket configured for {scenario.name!r}") from exc
+        client_class = (
+            _DocumentSocketClient if scenario.given.signal_channel is False else SocketClient
+        )
         client = NegotiatedClient(
-            SocketClient(socket_path, expected_uid=self.expected_uid, timeout=self.timeout)
+            client_class(socket_path, expected_uid=self.expected_uid, timeout=self.timeout)
         )
         return _SocketSession(scenario, client, self.deadline_callback, self.policy_callback)
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 import copy
 import os
 import socket
+import sys
 import threading
 from contextlib import ExitStack
 from datetime import UTC, datetime, timedelta
@@ -11,6 +12,7 @@ from io import StringIO
 from pathlib import Path
 
 import pytest
+import sayfirst_conformance.main as conformance_main
 import sayfirst_contract.binding.http_unix_socket.client as client_transport
 import sayfirst_contract.binding.http_unix_socket.replay as replay_transport
 from sayfirst_conformance.main import main
@@ -142,16 +144,19 @@ def test_the_command_returns_zero_for_a_complete_live_run(tmp_path: Path, monkey
             now[name] += timedelta(seconds=seconds)
 
     monkeypatch.setattr(replay_transport.time, "sleep", pass_deadline)
+
     # Block 2.3's version-change fixture needs the daemon's policy replaced
-    # mid-scenario. The command knows socket paths and nothing else, so against
-    # a real daemon that replacement is the operator's act; here the fake's is
-    # performed the same way the deadline above is passed.
-    monkeypatch.setattr(
-        replay_transport._SocketSession,
-        "change_policy",
-        lambda self, policy: stubs[self.scenario.name].change_policy(),
-    )
-    arguments = ["replay"]
+    # mid-scenario. Against a real daemon the command runs the program named
+    # with --change-policy-command, and refuses a run that names none. The
+    # fake's policy is changed in this process, so the callback the command
+    # builds from that name is replaced the same way the deadline above is
+    # passed; what the command hands the builder is still asserted.
+    def change_policy_in_process(command: str, *, timeout: float):  # type: ignore[no-untyped-def]
+        assert (command, timeout) == ("change-policy", 30.0)
+        return lambda scenario, policy: stubs[scenario.name].change_policy()
+
+    monkeypatch.setattr(conformance_main, "policy_change_command", change_policy_in_process)
+    arguments = ["replay", "--change-policy-command", "change-policy"]
     for name, socket_path in sockets.items():
         arguments.extend(("--socket", f"{name}={socket_path}"))
     output = StringIO()
@@ -372,3 +377,49 @@ def test_a_run_that_compared_nothing_prints_no_assertion_count() -> None:
     lines = [line for line in output.getvalue().splitlines() if not line.startswith("run\t")]
     assert len(lines) == len(scenarios)
     assert all(line.endswith("\tassertions=-") for line in lines), lines
+
+
+def test_a_policy_change_scenario_without_the_command_is_an_invalid_invocation(
+    tmp_path: Path,
+) -> None:
+    """A socket for that scenario and no way to change the policy could only ever fail."""
+    output = StringIO()
+    code = main(
+        [
+            "replay",
+            "--socket",
+            f"grant_miss_after_policy_version_change={tmp_path / 'd.sock'}",
+        ],
+        stdout=output,
+    )
+    assert code == 2
+    assert "--change-policy-command" in output.getvalue()
+
+
+def test_a_failing_policy_change_command_fails_the_scenario_and_says_why(
+    tmp_path: Path,
+) -> None:
+    name = "grant_miss_after_policy_version_change"
+    socket_path = scenario_address(tmp_path, name)
+    output = StringIO()
+    with serve(Stub(name), socket_path):
+        code = main(
+            [
+                "replay",
+                "--socket",
+                f"{name}={socket_path}",
+                "--change-policy-command",
+                f"{sys.executable} -c 'import sys; sys.exit(9)'",
+                *(
+                    argument
+                    for other in load_scenarios().values()
+                    if other.binds_server() and other.name != name
+                    for argument in ("--expected-absent", f"{other.name}=not this case")
+                ),
+            ],
+            stdout=output,
+        )
+    line = next(item for item in output.getvalue().splitlines() if item.startswith(name))
+    assert "\tfailed\t" in line
+    assert "PolicyChangeFailed: the policy-change command exited 9" in line
+    assert code == 1

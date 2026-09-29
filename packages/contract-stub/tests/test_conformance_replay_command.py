@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import os
 import socket
+import sys
 import threading
 from contextlib import ExitStack
 from dataclasses import replace
@@ -245,3 +246,51 @@ def test_a_held_grant_that_covers_nothing_is_a_failed_scenario(tmp_path: Path) -
         )
     assert report.failures()
     assert report.failures()[0].detail == "grant_use: expected 'expired', observed 'hit'"
+
+
+def test_a_policy_change_scenario_without_the_command_is_an_invalid_invocation(
+    tmp_path: Path,
+) -> None:
+    """A socket for that scenario and no way to change the policy could only ever fail."""
+    output = StringIO()
+    code = main(
+        [
+            "conformance",
+            "replay",
+            "--socket",
+            f"grant_miss_after_policy_version_change={tmp_path / 'd.sock'}",
+        ],
+        stdout=output,
+    )
+    assert code == 2
+    assert "--change-policy-command" in output.getvalue()
+
+
+def test_a_failing_policy_change_command_fails_the_scenario_and_says_why(
+    tmp_path: Path,
+) -> None:
+    name = "grant_miss_after_policy_version_change"
+    socket_path = scenario_address(tmp_path, name)
+    output = StringIO()
+    with serve(Stub(name), socket_path):
+        code = main(
+            [
+                "conformance",
+                "replay",
+                "--socket",
+                f"{name}={socket_path}",
+                "--change-policy-command",
+                f"{sys.executable} -c 'import sys; sys.exit(9)'",
+                *(
+                    argument
+                    for other in load_scenarios().values()
+                    if other.binds_server() and other.name != name
+                    for argument in ("--expected-absent", f"{other.name}=not this case")
+                ),
+            ],
+            stdout=output,
+        )
+    line = next(item for item in output.getvalue().splitlines() if item.startswith(name))
+    assert "\tfailed\t" in line
+    assert "PolicyChangeFailed: the policy-change command exited 9" in line
+    assert code == 1

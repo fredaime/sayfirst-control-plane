@@ -11,7 +11,7 @@ SOURCE = PACKAGE / "src" / "sayfirst_control_plane"
 
 def test_the_server_depends_on_the_contract_alone() -> None:
     project = tomllib.loads((PACKAGE / "pyproject.toml").read_text(encoding="utf-8"))["project"]
-    assert project["dependencies"] == ["sayfirst-contract==0.3.0"]
+    assert project["dependencies"] == ["sayfirst-contract==0.3.1"]
 
     imports = set()
     for source in SOURCE.rglob("*.py"):

@@ -385,6 +385,7 @@ def test_a_stop_signal_during_shutdown_does_not_end_the_daemon_in_a_traceback(
     class _Daemon:
         acl_note = "acl: checked"
         start_notes: ClassVar[list[str]] = []
+        address_left = None
 
         def start(self) -> None:
             return None

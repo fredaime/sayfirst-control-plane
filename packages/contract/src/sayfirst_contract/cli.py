@@ -26,6 +26,10 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import TextIO
 
+from .binding.http_unix_socket.policy_hook import (
+    policy_change_command,
+    require_a_policy_change_command,
+)
 from .binding.http_unix_socket.replay import SocketHarness
 from .golden import load_scenarios
 from .replay import Report, Side, replay
@@ -94,6 +98,14 @@ def _parser() -> argparse.ArgumentParser:
     replay_parser.add_argument("--expected-uid", type=int, default=os.geteuid())
     replay_parser.add_argument("--timeout", type=float, default=5.0)
     replay_parser.add_argument("--deadline-wait-seconds", type=float, default=61.0)
+    replay_parser.add_argument(
+        "--change-policy-command",
+        default=None,
+        metavar="CMD",
+        help="run once between a policy-change scenario's two asks; it writes the policy "
+        "the daemon must answer under and exits 0 once the daemon reads it",
+    )
+    replay_parser.add_argument("--change-policy-timeout", type=float, default=30.0)
     # `whoami` and `status` are answered by another module's parser, reached by
     # the dispatch in `main` before this one parses. They are declared here so
     # that `--help` lists every subcommand the tool answers rather than only
@@ -123,6 +135,14 @@ def main(arguments: Sequence[str] | None = None, *, stdout: TextIO | None = None
             raise ValueError(
                 f"scenarios cannot have both a socket and expected absence: {sorted(overlap)!r}"
             )
+        require_a_policy_change_command(sockets, scenarios, namespace.change_policy_command)
+        change_policy = (
+            policy_change_command(
+                namespace.change_policy_command, timeout=namespace.change_policy_timeout
+            )
+            if namespace.change_policy_command is not None
+            else None
+        )
         report = replay(
             scenarios,
             SocketHarness(
@@ -130,6 +150,7 @@ def main(arguments: Sequence[str] | None = None, *, stdout: TextIO | None = None
                 expected_uid=namespace.expected_uid,
                 timeout=namespace.timeout,
                 deadline_wait_seconds=namespace.deadline_wait_seconds,
+                change_policy=change_policy,
             ),
             Side.SERVER,
             expected_absent=expected_absent,

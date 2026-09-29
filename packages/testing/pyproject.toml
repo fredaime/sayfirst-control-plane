@@ -1,11 +1,11 @@
 # SPDX-License-Identifier: Apache-2.0
 [project]
 name = "sayfirst-testing"
-version = "0.3.0"
+version = "0.3.1"
 description = "Published conformance suites for control-plane ports"
 readme = "README.md"
 requires-python = ">=3.12,<3.15"
-dependencies = ["sayfirst-contract==0.3.0", "sayfirst-control-plane==0.3.0"]
+dependencies = ["sayfirst-contract==0.3.1", "sayfirst-control-plane==0.3.1", "pytest>=8.4,<9"]
 license = "Apache-2.0"
 
 authors = [{ name = "fredaime", email = "frederic.aime@gmail.com" }]
@@ -29,7 +29,7 @@ Documentation = "https://github.com/fredaime/sayfirst-control-plane/blob/main/pa
 Changelog = "https://github.com/fredaime/sayfirst-control-plane/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
-schemas = ["jsonschema>=4.25,<5"]
+schemas = ["jsonschema>=4.25,<5", "referencing>=0.36,<1"]
 
 [build-system]
 requires = ["hatchling==1.32.0"]
