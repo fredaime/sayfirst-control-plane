@@ -288,6 +288,14 @@ umask of `077` — which root can read and `sayfirst` cannot; the daemon
 refuses it at start with `policy_unavailable_at_start`, naming the path and
 the account that could not read it.
 
+**What a clean stop leaves.** A system daemon stops as `run_as`, and `/run/sayfirst`
+is root's, so the daemon cannot remove its own address: after a `SIGTERM` the name is
+still there and the daemon says so on standard error (`socket_left_behind: PATH: …`)
+before it exits `0`. Nobody is listening at it — a client reads « could not ask » — and
+the next start clears it and serves. A per-user daemon owns its directory and removes
+its address; if it cannot, it says so the same way, and the next start clears it, or
+refuses naming why when the cause persists.
+
 ## What survives a restart, and who may read it
 
 Beside the chains, the evidence root holds two more stores the daemon creates

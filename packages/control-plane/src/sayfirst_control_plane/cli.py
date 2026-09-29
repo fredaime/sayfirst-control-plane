@@ -120,9 +120,20 @@ def main(argv: Sequence[str] | None = None) -> int:
         # standard error at exit 0, which reads as a crash (article 2). A
         # supervisor that wants this process gone anyway still has SIGKILL.
         signal.signal(signal.SIGTERM, signal.SIG_IGN)
-        # The address is unlinked on the way out, so the next start finds
-        # nothing at the name rather than a stale one to clear (rule L7).
+        # Rule L7 on the way out: the address is removed, or the stop says it is still
+        # there. A system daemon has dropped to its own account and cannot remove a name
+        # in a directory only root may write; the next start clears a name nobody is
+        # listening at, so a supervisor's restart is unaffected. A per-user start whose
+        # cause persists (the directory still unwritable) refuses instead, naming why.
         daemon.stop()
+        if daemon.address_left is not None:
+            reason = daemon.address_left.strerror or str(daemon.address_left)
+            print(
+                f"socket_left_behind: {settings.socket_path}: {reason}; nobody is listening "
+                "at it; the next start clears it, or refuses naming why",
+                file=sys.stderr,
+                flush=True,
+            )
     return 0
 
 

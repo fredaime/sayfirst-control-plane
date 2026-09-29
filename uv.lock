@@ -220,7 +220,7 @@ wheels = [
 
 [[package]]
 name = "sayfirst-boundary"
-version = "0.3.0"
+version = "0.3.1"
 source = { editable = "packages/boundary" }
 dependencies = [
     { name = "sayfirst-contract" },
@@ -231,7 +231,7 @@ requires-dist = [{ name = "sayfirst-contract", editable = "packages/contract" }]
 
 [[package]]
 name = "sayfirst-conformance"
-version = "0.3.0"
+version = "0.3.1"
 source = { editable = "packages/conformance" }
 dependencies = [
     { name = "sayfirst-contract" },
@@ -242,7 +242,7 @@ requires-dist = [{ name = "sayfirst-contract", editable = "packages/contract" }]
 
 [[package]]
 name = "sayfirst-contract"
-version = "0.3.0"
+version = "0.3.1"
 source = { editable = "packages/contract" }
 
 [package.optional-dependencies]
@@ -256,7 +256,7 @@ provides-extras = ["stub"]
 
 [[package]]
 name = "sayfirst-contract-stub"
-version = "0.3.0"
+version = "0.3.1"
 source = { editable = "packages/contract-stub" }
 dependencies = [
     { name = "sayfirst-contract" },
@@ -267,7 +267,7 @@ requires-dist = [{ name = "sayfirst-contract", editable = "packages/contract" }]
 
 [[package]]
 name = "sayfirst-control-plane"
-version = "0.3.0"
+version = "0.3.1"
 source = { editable = "packages/control-plane" }
 dependencies = [
     { name = "sayfirst-contract" },
@@ -278,9 +278,10 @@ requires-dist = [{ name = "sayfirst-contract", editable = "packages/contract" }]
 
 [[package]]
 name = "sayfirst-testing"
-version = "0.3.0"
+version = "0.3.1"
 source = { editable = "packages/testing" }
 dependencies = [
+    { name = "pytest" },
     { name = "sayfirst-contract" },
     { name = "sayfirst-control-plane" },
 ]
@@ -288,11 +289,14 @@ dependencies = [
 [package.optional-dependencies]
 schemas = [
     { name = "jsonschema" },
+    { name = "referencing" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "jsonschema", marker = "extra == 'schemas'", specifier = ">=4.25,<5" },
+    { name = "pytest", specifier = ">=8.4,<9" },
+    { name = "referencing", marker = "extra == 'schemas'", specifier = ">=0.36,<1" },
     { name = "sayfirst-contract", editable = "packages/contract" },
     { name = "sayfirst-control-plane", editable = "packages/control-plane" },
 ]
@@ -323,7 +327,7 @@ dev = [
 
 [[package]]
 name = "sayfirstd"
-version = "0.3.0"
+version = "0.3.1"
 source = { editable = "packages/cli" }
 dependencies = [
     { name = "sayfirst-contract" },

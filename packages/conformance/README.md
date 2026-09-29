@@ -11,10 +11,14 @@ sayfirst-conformance replay --socket allow=/run/conformance/allow.sock
 
 Complete runs exit 0 as `proven`, disagreements exit 1 as `failed`, invalid
 invocations exit 2, and incomplete runs exit 3 as `unknown`. A run is complete
-when every server-bound scenario has a `--socket` and is replayed; one declared
-with `--expected-absent SCENARIO=REASON` leaves the run incomplete, and one
-named by neither fails it. The contract distribution's README shows a run that
-names all of them, and what each daemon must be arranged to do.
+when every server-bound scenario has a `--socket` and is replayed, and the daemon
+for `grant_miss_after_policy_version_change` is given `--change-policy-command`,
+the command that changes its policy. A `--socket` for that scenario without
+`--change-policy-command` is not an incomplete run but an invalid invocation,
+refused (exit 2) before anything is replayed. A scenario declared with
+`--expected-absent SCENARIO=REASON` leaves the run incomplete, and one named by
+neither fails it. The contract distribution's README shows a run that names all
+of them, and what each daemon must be arranged to do.
 
 The `sayfirst-cli` distribution, the `sayfirst_cli` import package and the
 `sayfirst` console script are the product command-line interface's, and are

@@ -85,6 +85,9 @@ LINUX_ONLY = {
     "test_an_evidence_root_under_a_world_writable_parent_refuses_the_start_by_name",
     "test_a_chain_already_in_the_store_for_a_scope_no_rule_names_refuses_the_start_by_name",
     "test_a_decision_in_a_scope_no_rule_names_is_recorded_on_a_chain_created_on_first_use",
+    # Rule L7 on the way out: the address outlives a clean stop in the directory
+    # the deployment guide leaves root's, and the stop says so.
+    "test_a_clean_stop_that_cannot_remove_the_socket_says_so_and_the_next_start_serves",
 }
 DARWIN_ONLY = {
     "test_peer_credentials_are_read_through_the_darwin_adapter",
@@ -142,6 +145,10 @@ ROOT_ONLY = {
     "test_an_evidence_root_under_a_world_writable_parent_refuses_the_start_by_name",
     "test_a_chain_already_in_the_store_for_a_scope_no_rule_names_refuses_the_start_by_name",
     "test_a_decision_in_a_scope_no_rule_names_is_recorded_on_a_chain_created_on_first_use",
+    # Rule L7 on the way out. Only a daemon that really drops is refused the unlink
+    # in `/run/sayfirst`, root's at 0755; measured in the root container, where the
+    # stop used to swallow the refusal and leave the name behind without a word.
+    "test_a_clean_stop_that_cannot_remove_the_socket_says_so_and_the_next_start_serves",
 }
 
 # The other direction: a guard whose premise is that the tester is *not* root.

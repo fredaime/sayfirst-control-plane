@@ -359,6 +359,10 @@ class Daemon:
         self._server: _Server | None = None
         self._serving = False
         self._stopped = False
+        #: The error that kept `stop()` from removing the address, when one did. The
+        #: daemon's command says so on its way out (rule L7): a name left at the address
+        #: is cleared by the next start, and a stop that swallowed it said nothing true.
+        self.address_left: OSError | None = None
         self._workers = ThreadPoolExecutor(max_workers=8, thread_name_prefix="directory")
 
     # -- start ----------------------------------------------------------------
@@ -542,8 +546,12 @@ class Daemon:
             if self._serving:
                 self._server.shutdown()
             self._server.server_close()
-            with suppress(OSError):
+            try:
                 os.unlink(self.settings.socket_path)
+            except FileNotFoundError:
+                pass
+            except OSError as left:
+                self.address_left = left
             self._server = None
         self._workers.shutdown(wait=False)
         if self.services is not None:

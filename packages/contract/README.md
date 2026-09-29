@@ -65,16 +65,83 @@ platform the client cannot verify a peer on — even when another scenario was
 proven. The exit status is that verdict's: `0` proven, `1` failed, `3` unknown.
 An invalid invocation replays nothing and exits `2`.
 
-The command has no way to change a daemon's policy or to move its clock, so
-three arrangements are the deployment's to make. The daemon for
-`grant_miss_after_policy_version_change` is asked the same question twice, and
-must answer the second under a policy that denies it. The daemon for
-`policy_unavailable_is_could_not_ask` must be unable to read its policy when it
-is asked; since a daemon refuses to start on a policy it cannot read, the file
-is broken after the start. And the daemons for the three that end a wait must
-serve both approval operations — the one for `review_expire` suspending with a
-wait shorter than the replay's `--deadline-wait-seconds`, and reading as
-expired as soon as that wait has passed.
+Three arrangements are the deployment's to make, and the command reaches the one it
+can. The daemon for `grant_miss_after_policy_version_change` is asked the same
+question twice and must answer the second under a policy that denies it: name the
+deployment's own command with `--change-policy-command CMD`. The replayer runs it once,
+between the two asks, split without a shell, with `SAYFIRST_CONFORMANCE_SCENARIO` and
+`SAYFIRST_CONFORMANCE_POLICY` (the scripted policy as JSON, `{"example.effect": "deny"}`)
+in its environment; it writes the policy the daemon must answer under and exits `0`
+once the daemon has read it — for this daemon, as soon as the new file is completely
+written, because it reads its policy afresh for every decision. A non-zero
+exit, a command that cannot be run, or one that outlasts `--change-policy-timeout`
+(default 30 seconds) fails that scenario and says which. A socket for that scenario
+with no command is an invalid invocation (`2`): the run could only fail.
+
+Such a command can be a few lines of `sh`. This one, installed as
+`/usr/local/bin/conformance-deny-example-effect`, writes a policy denying
+`example.effect` to the policy file that daemon's `--config` names, and returns once
+the new policy is in place — this daemon reads the policy file as it is when a question
+arrives, so the command need only return once the new file is completely written (another
+daemon may need the command to wait for its own reload):
+
+```sh
+#!/bin/sh
+# SAYFIRST_CONFORMANCE_POLICY is {"example.effect": "deny"} for this scenario.
+policy=/etc/sayfirst/conformance/grant-miss/policy.toml
+cat > "$policy.tmp" <<'EOF'
+format = 1
+[revision]
+reason = "conformance: example.effect denied"
+[[rule]]
+id = "changed"
+capability = "example.effect"
+scope = "local"
+principals = ["user:conformance"]
+outcome = "deny"
+reason = "changed"
+EOF
+mv "$policy.tmp" "$policy"
+```
+
+The path and the principal are this example's, not a convention: write to the policy
+path your daemon's configuration names, for the account the replay asks as.
+
+The daemon for `policy_unavailable_is_could_not_ask` must be unable to read its
+policy when it is asked; since a daemon refuses to start on a policy it cannot read, the file is removed
+after the start. The daemons for the three that end a wait serve both approval
+operations — the one for `review_expire` suspending with a wait shorter than the
+replay's `--deadline-wait-seconds`, and rendering it `expired` as of the instant a
+read is taken, not only after a sweep it schedules itself.
+
+A replay leaves its daemons as it found them only where the scenario says so: a wait
+it rejected stays rejected until its deadline. Replay against freshly started daemons;
+a second run against the same ones is a different run.
+
+The request a scenario scripts is the request the replayer sends:
+`no_grant_without_signal_channel` asks for the answer that carries no event stream.
+
+A complete run adds the policy-change command to the sockets above:
+
+```console
+sayfirst-conformance replay \
+  --socket allow=/run/conformance/allow.sock \
+  --socket deny=/run/conformance/deny.sock \
+  --socket grant_miss_after_policy_version_change=/run/conformance/grant_miss_after_policy_version_change.sock \
+  --socket missing_policy=/run/conformance/missing_policy.sock \
+  --socket no_grant_on_deny=/run/conformance/no_grant_on_deny.sock \
+  --socket no_grant_without_signal_channel=/run/conformance/no_grant_without_signal_channel.sock \
+  --socket policy_unavailable_is_could_not_ask=/run/conformance/policy_unavailable_is_could_not_ask.sock \
+  --socket review_approve=/run/conformance/review_approve.sock \
+  --socket review_expire=/run/conformance/review_expire.sock \
+  --socket review_reject=/run/conformance/review_reject.sock \
+  --socket strictest_rule_wins=/run/conformance/strictest_rule_wins.sock \
+  --change-policy-command /usr/local/bin/conformance-deny-example-effect \
+  --deadline-wait-seconds 5
+```
+
+A run that names every server-bound scenario and the policy-change command is
+complete, and proves a conforming daemon with exit 0.
 
 `sayfirstd conformance replay` is the same replay under the operator surface:
 the same options, the same whole-run line and the same exit statuses. Its

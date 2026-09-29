@@ -200,6 +200,7 @@ jobs:
   #
   # ROOT_CONTAINER_GUARDS_BEGIN
   #   - test_a_chain_already_in_the_store_for_a_scope_no_rule_names_refuses_the_start_by_name
+  #   - test_a_clean_stop_that_cannot_remove_the_socket_says_so_and_the_next_start_serves
   #   - test_a_configuration_a_stranger_can_write_refuses_the_start_by_name
   #   - test_a_configuration_only_root_and_the_administrator_group_can_write_starts
   #   - test_a_decision_in_a_scope_no_rule_names_is_recorded_on_a_chain_created_on_first_use

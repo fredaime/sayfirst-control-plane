@@ -19,6 +19,9 @@ The recipe for the container is `docs/testing/root-container.md`.
 from __future__ import annotations
 
 import os
+import signal
+import subprocess
+import sys
 
 from root_system_mode import (
     CLIENT,
@@ -639,3 +642,39 @@ def test_a_decision_in_a_scope_no_rule_names_is_recorded_on_a_chain_created_on_f
     assert effect["body"]["outcome"] == "deny", effect
     assert effect["scope"] == "audit", effect
     assert effect["principal"] == {"kind": "user", "id": client.name, "via": []}, effect
+
+
+@requires_platform("linux")
+@requires_root()
+def test_a_clean_stop_that_cannot_remove_the_socket_says_so_and_the_next_start_serves() -> None:
+    """Rule L7: a dropped daemon cannot unlink in root's directory, and says so.
+
+    The layout `docs/deployment.md` prescribes keeps `/run/sayfirst` root's at 0755,
+    so after the drop the address outlives a clean stop. The stop says the name is
+    there; the next start clears it and serves.
+    """
+    client = required_account(CLIENT)
+
+    def serve() -> subprocess.Popen:
+        process = subprocess.Popen(
+            [sys.executable, "-m", "sayfirst_control_plane.cli", "serve", "--config",
+             str(deployment.configuration_path)],
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+        )  # fmt: skip
+        assert process.stdout is not None
+        first = process.stdout.readline()
+        assert first.startswith("serving system at "), first + process.stderr.read()
+        return process
+
+    with deployment_root() as root:
+        deployment = lay_out(root, principal=client.name, packager_owns_the_store=True)
+        deployment.write_configuration()
+        first = serve()
+        first.send_signal(signal.SIGTERM)
+        _, err = first.communicate(timeout=30)
+        assert first.returncode == 0, err
+        assert deployment.socket_path.exists()
+        assert f"socket_left_behind: {deployment.socket_path}: " in err, err
+        again = serve()
+        again.send_signal(signal.SIGTERM)
+        again.communicate(timeout=30)

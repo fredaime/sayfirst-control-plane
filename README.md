@@ -41,8 +41,9 @@ changes, or the control plane goes silent for a lifetime.
 **A person is in the loop by construction, not by dashboard.** An approval is
 one person's act, taken once; the deadline is the policy's own
 `review_deadline_seconds`, not the tool's; the allow it produces is the one
-execution that act authorised, and a rejection is final — the next ask of that
-question is a deny that says why.
+execution that act authorised, and a rejection stands until the wait's own
+deadline — every ask of that question until then is a deny that says why, and a
+restart forgets it.
 
 **The evidence is honest about itself.** The two paragraphs below are the
 product's spine, not a footnote — read them before anything else on this page.
@@ -67,13 +68,14 @@ conservative one. [`SECURITY.md`](SECURITY.md) states all three.
 ## Install
 
 ```console
-$ uvx --from sayfirst-cli==0.3.0 sayfirst --help
+$ uvx --from sayfirst-cli==0.3.1 sayfirst --help
 usage: sayfirst [-h]
                 {ask,trace,explain,evidence,approvals,instrument,packs} ...
+…
 ```
 
-Seven verbs; `uv tool install sayfirst-cli==0.3.0` keeps them on your path.
-Every distribution is on the index at 0.3.0: the client `sayfirst-cli`, and
+Seven verbs; `uv tool install sayfirst-cli==0.3.1` keeps them on your path.
+Every distribution is on the index at 0.3.1: the client `sayfirst-cli`, and
 from this repository the daemon (`sayfirst-control-plane`), its operator
 surface (`sayfirstd`), the contract (`sayfirst-contract`), the boundary
 (`sayfirst-boundary`), the contract's fake (`sayfirst-contract-stub`) and the
@@ -91,7 +93,7 @@ $ sayfirst-daemon up --quickstart
 The third is the product client's, and it is shown where that command is
 published — the client's
 [`README`](https://github.com/fredaime/sayfirst-cli/blob/main/README.md): its
-`instrument run` verb, given `--pack subprocess --scope local -- python
+`instrument run` verb, given `--pack subprocess --scope local -- python3
 my_agent.py`, runs a program you already have with every process it starts
 asked about first. It is told neither where this daemon is nor where the pack
 is: the address is the per-user default, which the daemon and the client each
@@ -137,7 +139,7 @@ The client's
 walks the whole of it: an allow, a denial by changing one word of the policy, a
 suspension and the person who ends it, the proof, and the chain read back. Every
 command on it was run, in that order, before it was written down. Those three
-commands are those of 0.3.0, and every distribution they install is on the
+commands are those of 0.3.1, and every distribution they install is on the
 index (the section above). A deployment of your own goes on using
 `sayfirst-daemon serve --config`
 under its own supervisor — [`docs/deployment.md`](docs/deployment.md).
