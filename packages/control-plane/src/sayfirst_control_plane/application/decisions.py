@@ -460,12 +460,15 @@ class DecisionService:
                 extra,
             )
             on_connection = grant_connection or signal_writer is not None
+            # An allow that spends a person's approval authorises ONE execution
+            # (article 12), so it mints no grant: a grant answers identical later
+            # acts without asking (article 10), which would turn one approval
+            # into as many executions as fit in its lifetime. An allow the policy
+            # gave keeps its grant as before.
+            spends_an_approval = consulted is not None and consulted.spend
             reservation = (
                 self.grants.reserve(question.principal.uid)
-                # The answered outcome and not the verdict's: a suspension whose
-                # approval was granted is an allow, and it takes the grant path an
-                # allow takes, reservation and lifetime alike.
-                if outcome is Outcome.ALLOW and on_connection
+                if outcome is Outcome.ALLOW and on_connection and not spends_an_approval
                 else None
             )
             grant = self._prepare_grant(

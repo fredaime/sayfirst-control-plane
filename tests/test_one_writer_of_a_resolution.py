@@ -51,6 +51,11 @@ RESOLVE_CALLS: dict[tuple[str, str, str], str] = {
     ): "a filesystem path, made absolute",
     (
         "sayfirst_control_plane/adapters/socket_server.py",
+        "Daemon.start",
+        "parent",
+    ): "the socket's directory as checked, a filesystem path made absolute",
+    (
+        "sayfirst_control_plane/adapters/socket_server.py",
         "Daemon.on_connection",
         "self",
     ): "an account directory resolving an identity's groups",

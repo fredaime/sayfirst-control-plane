@@ -1,11 +1,11 @@
 # SPDX-License-Identifier: Apache-2.0
 [project]
 name = "sayfirst-boundary"
-version = "0.3.1"
+version = "0.3.2"
 description = "The in-process boundary that holds a grant and asks before an effect"
 readme = "README.md"
 requires-python = ">=3.12,<3.15"
-dependencies = ["sayfirst-contract==0.3.1"]
+dependencies = ["sayfirst-contract==0.3.2"]
 license = "Apache-2.0"
 
 authors = [{ name = "fredaime", email = "frederic.aime@gmail.com" }]

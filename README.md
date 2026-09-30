@@ -68,14 +68,14 @@ conservative one. [`SECURITY.md`](SECURITY.md) states all three.
 ## Install
 
 ```console
-$ uvx --from sayfirst-cli==0.3.1 sayfirst --help
+$ uvx --from sayfirst-cli==0.3.2 sayfirst --help
 usage: sayfirst [-h]
                 {ask,trace,explain,evidence,approvals,instrument,packs} ...
 …
 ```
 
-Seven verbs; `uv tool install sayfirst-cli==0.3.1` keeps them on your path.
-Every distribution is on the index at 0.3.1: the client `sayfirst-cli`, and
+Seven verbs; `uv tool install sayfirst-cli==0.3.2` keeps them on your path.
+Every distribution is on the index at 0.3.2: the client `sayfirst-cli`, and
 from this repository the daemon (`sayfirst-control-plane`), its operator
 surface (`sayfirstd`), the contract (`sayfirst-contract`), the boundary
 (`sayfirst-boundary`), the contract's fake (`sayfirst-contract-stub`) and the
@@ -139,7 +139,7 @@ The client's
 walks the whole of it: an allow, a denial by changing one word of the policy, a
 suspension and the person who ends it, the proof, and the chain read back. Every
 command on it was run, in that order, before it was written down. Those three
-commands are those of 0.3.1, and every distribution they install is on the
+commands are those of 0.3.2, and every distribution they install is on the
 index (the section above). A deployment of your own goes on using
 `sayfirst-daemon serve --config`
 under its own supervisor — [`docs/deployment.md`](docs/deployment.md).

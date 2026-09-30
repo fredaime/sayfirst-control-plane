@@ -1,6 +1,6 @@
 {
   "artifacts": {
-    "binding/http-unix-socket/openapi.json": "48c9d095a206bed6f54f03b3b9ab2ae943286ae3f50f1e6eb536c2862295f4a9",
+    "binding/http-unix-socket/openapi.json": "bc8109837f904ab7d6f6753aaac5bbc02f55428a2eb4b3e2e7c7764f4b4d3c96",
     "domain/attributes.json": "9e0be273c3824f5f6a60dd39beb364e4a3690abff57ed4c400d8323ea466aa04",
     "domain/evidence-export-manifest-vectors.json": "8159d890a85d6ed2f35218fce257825c0a9cac6ab9a76f150069c395cf8cafde",
     "domain/evidence-preimage-v1.json": "04225c0589347eec77d4e1449aeef68dbe08fa3fe61be71be3b7ceb799db58e9",

@@ -47,7 +47,7 @@ def test_the_contract_distribution_imports_nothing_of_the_server() -> None:
 def test_the_stub_depends_on_the_contract_alone() -> None:
     """Article 14: the optional fake depends only on the contract it implements."""
     project = tomllib.loads((STUB / "pyproject.toml").read_text(encoding="utf-8"))["project"]
-    assert project["dependencies"] == ["sayfirst-contract==0.3.1"]
+    assert project["dependencies"] == ["sayfirst-contract==0.3.2"]
     imports = _imports(STUB / "src" / "sayfirst_contract_stub")
     assert imports <= sys.stdlib_module_names | {
         "sayfirst_contract",

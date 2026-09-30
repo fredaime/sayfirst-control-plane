@@ -582,14 +582,12 @@ def test_the_published_client_shows_and_resolves_an_approval(daemon) -> None:  #
     """`sayfirst approvals show` and `approve` meet a real suspension, end to end.
 
     The boundary asks a suspend rule; `show` renders the pending wait; `approve
-    --reason ok` ends it and renders the approved record; the next ask through
-    the SAME boundary allows with the grant that approval minted, so the body
-    runs once (article 10 — a grant answers the question it was minted for
-    without a second ask, and `counting.by_capability` is what actually
-    measures that, not a read of the daemon's own record). A third ask, on a
-    fresh boundary so it is not answered from the grant the second one holds,
-    suspends anew on a new reference — and resolving the FIRST, already-spent
-    reference again is refused.
+    --reason ok` ends it and renders the approved record; the next ask allows
+    once, and the approval's allow mints no grant, so the same act again
+    through the SAME boundary suspends anew on a new reference (article 12 —
+    one approval authorises one execution, and `counting.by_capability` is
+    what actually measures that, not a read of the daemon's own record). And
+    resolving the FIRST, already-spent reference again is refused.
 
     That refusal is `approval_resolved`, and the registry's class column
     publishes it as a refusal — the daemon was asked to end a wait that was
@@ -627,18 +625,14 @@ def test_the_published_client_shows_and_resolves_an_approval(daemon) -> None:  #
     with closing(holder):
         with holder.request("example.waits", ARGUMENTS) as grant:
             allowed = grant.decision_ref
-        # The same question again, on the same boundary: answered from the
-        # grant the first ask minted, which is what makes the body run once.
-        with holder.request("example.waits", ARGUMENTS) as again:
-            assert again.decision_ref == allowed
-        assert counting.by_capability == {"example.waits": 1}
+        # The allow spent the person's one act and minted no grant, so the same
+        # act again in the same boundary waits anew, on a new reference.
+        with pytest.raises(Suspended) as raised, holder.request("example.waits", ARGUMENTS):
+            pytest.fail("a suspended effect ran its body")
+        assert raised.value.approval_ref != reference
+        assert counting.by_capability == {"example.waits": 2}
 
     _spoke(_explained(socket, allowed), "outcome: allow", "reason: approval_granted")
-
-    # One resolution authorises one execution: a fresh boundary's ask of the
-    # same question finds the approval spent and waits anew, on a new reference.
-    anew = _suspended(running)
-    assert anew.approval_ref != reference
 
     spent = _client(
         "approvals", "approve", "--scope", "local", "--approval", reference, "--socket", socket

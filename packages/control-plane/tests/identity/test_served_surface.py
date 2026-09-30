@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import os
+import socket
 import time
 from pathlib import Path
 
@@ -413,8 +414,20 @@ def _raw(session, request: bytes) -> tuple[bytes, bool]:  # type: ignore[no-unty
     stream = connection.sock
     assert stream is not None
     stream.settimeout(2)
-    stream.sendall(request)
+    # The smallest send buffer the platform grants, so a request longer than
+    # the daemon reads outruns it here as it does on macOS: there the default
+    # AF_UNIX buffers are small enough that a daemon ending the connection
+    # mid-body fails the write, while Linux's larger ones used to absorb the
+    # whole request and only surface the same end later, on `recv`.
+    stream.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, 4096)
     answered, closed = b"", False
+    try:
+        stream.sendall(request)
+    except (BrokenPipeError, ConnectionResetError):
+        # The daemon ended the connection while the request was still being
+        # written. That is its answer to a body it will not read, not a
+        # failure to ask: stop writing, and read what it wrote before ending.
+        closed = True
     try:
         while True:
             block = stream.recv(65536)
@@ -424,6 +437,10 @@ def _raw(session, request: bytes) -> tuple[bytes, bool]:  # type: ignore[no-unty
             answered += block
     except TimeoutError:
         pass
+    except ConnectionResetError:
+        # A daemon that ends the connection on bytes it did not read resets it
+        # rather than ends it; what it wrote first has been read above.
+        closed = True
     stream.close()
     return answered, closed
 
@@ -449,6 +466,61 @@ def test_a_length_that_is_not_a_length_is_refused_rather_than_ignored(make_sessi
     # There is no telling where the next request begins on a stream whose
     # framing was not read, so the connection ends rather than desyncs.
     assert closed, "the connection was left open on a body the daemon could not frame"
+
+
+_BODY_BOUND = 65536
+
+
+def test_a_body_longer_than_the_daemon_reads_is_refused_before_it_is_read(make_session) -> None:  # type: ignore[no-untyped-def]
+    """A declared length past the bound is refused at once, and nothing of it is read.
+
+    The daemon read whatever length a peer declared, into memory, and waited
+    for all of it: one admitted peer could hold a worker and grow the daemon
+    by the size it named.
+    """
+    session = make_session(credential=_credential(), directory=alice_directory())
+    for method, target in (("GET", "/whoami"), ("POST", "/decisions"), ("POST", "/nowhere")):
+        for declared in (_BODY_BOUND + 1, 10**12):
+            started = time.monotonic()
+            answered, closed = _raw(
+                session,
+                f"{method} {target} HTTP/1.1\r\nHost: sayfirst\r\n"
+                f"Content-Type: application/json\r\nContent-Length: {declared}\r\n\r\n".encode(),
+            )
+            head, _, body = answered.partition(b"\r\n\r\n")
+            assert head.startswith(b"HTTP/1.1 400 "), (method, target, declared, answered)
+            assert json.loads(body or b"{}")["code"] == "request_malformed", answered
+            assert closed, (method, target, declared)
+            assert time.monotonic() - started < 2.0, (method, target, declared)
+
+
+def test_a_body_at_the_bound_is_still_read(make_session) -> None:  # type: ignore[no-untyped-def]
+    """The bound refuses nothing a caller may send: at it, the connection keeps its contract."""
+    session = make_session(credential=_credential(), directory=alice_directory())
+    connection = session.connect()
+    connection.request("GET", "/whoami", body=b" " * _BODY_BOUND)
+    first = connection.getresponse()
+    first.read()
+    status, document = session.request("GET", "/whoami", connection=connection)
+    connection.close()
+    assert first.status == 200
+    assert status == 200 and document["status"] == "established", document
+
+
+def test_a_chunked_body_past_the_bound_is_not_skipped_to_its_end(make_session) -> None:  # type: ignore[no-untyped-def]
+    """A chunked body is skipped up to the bound and no further; past it the connection ends."""
+    session = make_session(credential=_credential(), directory=alice_directory())
+    chunk = b"x" * 40000
+    framed = (b"%x\r\n" % len(chunk) + chunk + b"\r\n") * 2 + b"0\r\n\r\n"
+    answered, closed = _raw(
+        session,
+        b"POST /decisions HTTP/1.1\r\nHost: sayfirst\r\n"
+        b"Transfer-Encoding: chunked\r\n\r\n" + framed,
+    )
+    head, _, body = answered.partition(b"\r\n\r\n")
+    assert head.startswith(b"HTTP/1.1 400 "), answered
+    assert json.loads(body or b"{}")["code"] == "request_malformed"
+    assert closed, "a chunked body past the bound was skipped to its end"
 
 
 # -- one registry, one binding, no second copy of either ----------------------
