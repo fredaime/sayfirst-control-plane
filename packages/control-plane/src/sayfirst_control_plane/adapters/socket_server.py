@@ -67,6 +67,7 @@ from ..settings import (
     StartRefused,
     directory_mode,
     final_file_mode,
+    sun_path_limit,
     umask_for,
 )
 
@@ -181,14 +182,77 @@ def ancestor_facts_of(path: Path, platform: str) -> tuple[DirectoryFacts, ...]:
     return tuple(facts_of(parent, platform) for parent in path.resolve().parents)
 
 
+_MAX_LINKS_FOLLOWED: Final[int] = 40
+"""The kernel's own bound on links followed in one lookup; past it, it answers ELOOP."""
+
+
+def directories_crossed(directory: Path, *, daemon_uid: int) -> tuple[Path, ...]:
+    """Every directory a lookup of `directory` reads a name in, links followed as the kernel does.
+
+    Resolving first drops the directories that hold the links, and whoever can
+    write one of those can point its link elsewhere after the check (article
+    6). Each is returned for the ancestor rule to judge, root first. A link is
+    refused outright unless root or the daemon owns it: the sticky exemption of
+    rule S4 bars renaming another's entry, not an owner replacing their own
+    link, so in a sticky directory a stranger's link is still theirs to point.
+    """
+    pending = list(Path(directory).absolute().parts[1:])
+    current = Path("/")
+    crossed: list[Path] = []
+    followed = 0
+    while pending:
+        name = pending.pop(0)
+        if name in ("", "."):
+            continue
+        if name == "..":
+            current = current.parent
+            continue
+        crossed.append(current)
+        candidate = current / name
+        found = os.lstat(candidate)
+        if not stat_module.S_ISLNK(found.st_mode):
+            current = candidate
+            continue
+        followed += 1
+        if followed > _MAX_LINKS_FOLLOWED:
+            raise StartRefused("socket_directory_unprotected", f"{directory}: too many links")
+        if found.st_uid not in (0, daemon_uid):
+            raise StartRefused(
+                "socket_directory_unprotected",
+                f"{candidate} is a link owned by uid {found.st_uid}, neither root nor the "
+                "daemon's account, so it is not trusted",
+            )
+        target = Path(os.readlink(candidate))
+        if target.is_absolute():
+            current = Path("/")
+            pending = [*target.parts[1:], *pending]
+        else:
+            pending = [*target.parts, *pending]
+    return tuple(dict.fromkeys(crossed))
+
+
 def protect_directory(directory: Path, *, daemon_uid: int, platform: str) -> str:
-    """Refuse to start unless nobody but the daemon and root can write the place."""
+    """Refuse to start unless nobody but the daemon and root can write the place, or any way to it.
+
+    The resolved directory and its parents are judged first, nearest first;
+    then every directory the configured spelling crosses on its way there,
+    which the resolution dropped — a link's own directory is where the link is
+    replaced (article 6, rule S4).
+    """
     resolved = directory.resolve()
     if not resolved.is_dir():
         raise StartRefused("socket_directory_missing", str(resolved))
+    st = facts_of(resolved, platform)
+    resolved_ancestors = ancestor_facts_of(resolved, platform)
+    judged = {st.name, *(facts.name for facts in resolved_ancestors)}
+    crossed: list[DirectoryFacts] = []
+    for place in directories_crossed(directory, daemon_uid=daemon_uid):
+        facts = facts_of(place, platform)
+        if facts.name not in judged:
+            crossed.append(facts)
     verdict = directory_protection(
-        st=facts_of(resolved, platform),
-        ancestors=ancestor_facts_of(resolved, platform),
+        st=st,
+        ancestors=resolved_ancestors + tuple(crossed),
         daemon_uid=daemon_uid,
         platform=platform,
     )
@@ -357,6 +421,9 @@ class Daemon:
         self.acl_note = ""
         self.start_notes: list[str] = []
         self._server: _Server | None = None
+        #: The name `start` bound — the checked directory's, not the configured
+        #: spelling — and the one `stop` removes (article 6). None until bound.
+        self._address: Path | None = None
         self._serving = False
         self._stopped = False
         #: The error that kept `stop()` from removing the address, when one did. The
@@ -415,6 +482,19 @@ class Daemon:
             self.acl_note = protect_directory(
                 parent, daemon_uid=self.daemon_uid, platform=self.platform
             )
+        # Every later operation names the directory the check proved, not the
+        # configured spelling of it: a link on the configured path, re-followed
+        # after the check, could name another place (article 6). Clients keep
+        # the configured path.
+        path = parent.resolve() / path.name
+        # The settings bounded the configured spelling; the name bound is this
+        # one, and a short link into a deep directory makes it the longer.
+        limit = sun_path_limit(self.platform)
+        if len(str(path).encode()) + 1 > limit:
+            raise StartRefused(
+                "socket_path_too_long",
+                f"{path} is {len(str(path).encode()) + 1} bytes, the limit is {limit}",
+            )
         # A name this daemon cannot clear is a name it cannot have (rule L7).
         with _refusing("socket_in_use", f"clearing {path}"):
             clear_stale_address(path)
@@ -449,6 +529,7 @@ class Daemon:
                     os.unlink(path)
             raise
         self._server = server
+        self._address = path
 
     def _set_permissions(self, path: Path) -> None:
         expected_mode = final_file_mode(self.settings.mode)
@@ -456,9 +537,14 @@ class Daemon:
             raise StartRefused("socket_group_unknown", self.settings.group)
         with _refusing("socket_permissions_denied", f"setting the owner and mode of {path}"):
             if self.settings.mode == SYSTEM:
-                os.chown(path, 0, self.socket_gid)
+                os.chown(path, 0, self.socket_gid, follow_symlinks=False)
             os.chmod(path, expected_mode)
-            st = os.stat(path)
+            st = os.lstat(path)
+        if not stat_module.S_ISSOCK(st.st_mode):
+            # Read without following: a link at the name would have taken the
+            # chmod through to its target, and a stat that followed it too would
+            # agree with what it found there (article 6).
+            raise StartRefused("socket_mode_invalid", f"{path} is not the socket this daemon bound")
         if stat_module.S_IMODE(st.st_mode) != expected_mode:
             raise StartRefused(
                 "socket_mode_invalid",
@@ -546,13 +632,18 @@ class Daemon:
             if self._serving:
                 self._server.shutdown()
             self._server.server_close()
+            # The name `start` bound — the checked directory's, never the
+            # configured spelling re-followed (article 6, rule L7). `start`
+            # sets the two together, so a server always has its address.
+            assert self._address is not None
             try:
-                os.unlink(self.settings.socket_path)
+                os.unlink(self._address)
             except FileNotFoundError:
                 pass
             except OSError as left:
                 self.address_left = left
             self._server = None
+            self._address = None
         self._workers.shutdown(wait=False)
         if self.services is not None:
             self.services.close()  # type: ignore[attr-defined]

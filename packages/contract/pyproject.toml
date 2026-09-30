@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: Apache-2.0
 [project]
 name = "sayfirst-contract"
-version = "0.3.1"
+version = "0.3.2"
 description = "The public domain contract and its generated binding"
 readme = "README.md"
 requires-python = ">=3.12,<3.15"
@@ -29,7 +29,7 @@ Documentation = "https://github.com/fredaime/sayfirst-control-plane/blob/main/pa
 Changelog = "https://github.com/fredaime/sayfirst-control-plane/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
-stub = ["sayfirst-contract-stub==0.3.1"]
+stub = ["sayfirst-contract-stub==0.3.2"]
 
 [tool.uv.sources]
 sayfirst-contract-stub = { workspace = true }

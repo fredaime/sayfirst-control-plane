@@ -43,13 +43,22 @@ jobs:
   # are not listed here — that runner owes them, and the gate step says so.
   #
   # OS_REAL_GUARDS_BEGIN
+  #   - test_a_chain_of_forty_one_links_is_refused_as_too_many_links
+  #   - test_a_chain_of_thirty_nine_links_is_followed_to_its_end
   #   - test_a_group_writable_ancestor_is_refused_unless_it_is_sticky
+  #   - test_a_link_another_account_owns_is_refused_even_in_a_sticky_directory
+  #   - test_a_link_naming_itself_is_refused_as_too_many_links
+  #   - test_a_link_of_this_account_in_a_private_directory_still_passes
   #   - test_a_reconnect_is_authorised_on_the_credential_it_read
+  #   - test_a_relative_link_climbing_out_crosses_the_directories_the_kernel_reads
+  #   - test_a_resolved_address_longer_than_the_kernel_holds_is_refused_by_name
   #   - test_a_second_request_on_one_connection_keeps_the_credential
+  #   - test_a_socket_directory_reached_through_a_link_in_a_writable_directory_is_refused
   #   - test_a_stale_socket_is_replaced_and_a_live_one_is_not
   #   - test_a_start_the_host_refuses_exits_with_the_documented_code_and_reason
   #   - test_a_system_reconnect_resolves_its_expected_principal_again
   #   - test_an_impostor_bound_at_the_path_is_refused_by_the_client
+  #   - test_permissions_are_set_on_the_name_that_was_checked
   #   - test_status_answers_the_document_the_contract_publishes
   #   - test_status_exits_could_not_ask_when_nothing_is_listening
   #   - test_status_given_no_address_finds_a_per_user_daemon_at_the_default_one

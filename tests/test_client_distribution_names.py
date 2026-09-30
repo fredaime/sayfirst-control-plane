@@ -336,7 +336,7 @@ def test_the_conformance_distribution_claims_no_operator_facing_name() -> None:
     assert "scripts" not in contract
     assert conformance["name"] == "sayfirst-conformance"
     assert conformance["scripts"] == {"sayfirst-conformance": "sayfirst_conformance.main:main"}
-    assert conformance["dependencies"] == ["sayfirst-contract==0.3.1"]
+    assert conformance["dependencies"] == ["sayfirst-contract==0.3.2"]
     assert _imports(CONFORMANCE / "src" / "sayfirst_conformance") <= sys.stdlib_module_names | {
         "sayfirst_contract",
         "sayfirst_conformance",

@@ -210,7 +210,7 @@ def test_the_same_question_asked_again_answers_the_same_suspension(tmp_path) -> 
     assert len(approvals.pending()) == 1
 
 
-def test_an_approved_question_allows_once_with_a_grant_and_is_then_consumed(tmp_path) -> None:  # type: ignore[no-untyped-def]
+def test_an_approved_question_allows_once_without_a_grant_and_is_then_consumed(tmp_path) -> None:  # type: ignore[no-untyped-def]
     """Article 12: one resolution authorises one execution, and the next ask waits again."""
     service, approvals, decisions, clock = _service(tmp_path)
     reference = _suspended(service, approvals)
@@ -221,8 +221,9 @@ def test_an_approved_question_allows_once_with_a_grant_and_is_then_consumed(tmp_
     assert decision.outcome is Outcome.ALLOW
     assert decision.reason is Reason.APPROVAL_GRANTED
     assert decision.approval_ref == reference
-    assert answer.grant is not None
-    assert decision.extra["grant_id"] == answer.grant.grant_id
+    # The person's one act authorises one execution: no grant answers a later act.
+    assert answer.grant is None
+    assert decision.extra["grant_id"] is None
     recorded = decisions.get("local", decision.decision_ref)
     assert recorded is not None and recorded.approval_ref == reference
     assert approvals.read("local", reference).consumed is True
@@ -637,10 +638,10 @@ def test_a_claim_no_record_followed_is_given_back_however_the_ask_ended(tmp_path
     reference = _suspended(service, approvals)
     _resolve(approvals, reference, clock, ApprovalResolution.APPROVE)
 
-    def refuse(principal_uid: int) -> object:
+    def refuse(*args: object, **kwargs: object) -> object:
         raise RuntimeError("the registry refused the reservation")
 
-    service.grants.reserve = refuse  # type: ignore[method-assign]
+    service._prepare_grant = refuse  # type: ignore[method-assign]
     with pytest.raises(RuntimeError, match="refused the reservation"):
         service.ask(_question(), grant_connection=True)
     kept = approvals.read("local", reference)

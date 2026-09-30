@@ -207,6 +207,9 @@ body that names one is refused as any member outside this generation is —
 
 _KEEP_ALIVE_SECONDS: Final[float] = 30.0
 _MAX_FRAMING_LINE: Final[int] = 65536
+_MAX_BODY_BYTES: Final[int] = 65536
+"""The longest body this daemon reads. Every document it is asked for is a few
+hundred bytes; a peer that declares more is refused before a byte is read."""
 _FRAMING_BLOCK: Final[int] = 65536
 _HEX_DIGITS: Final[bytes] = b"0123456789abcdefABCDEF"
 
@@ -426,9 +429,17 @@ class RequestHandler(BaseHTTPRequestHandler):
             length = int(declared)
         except ValueError:
             length = -1
-        if length < 0:
+        if length < 0 or length > _MAX_BODY_BYTES:
+            # Nothing of the body is read, so there is no telling where the next
+            # request would begin: the connection ends rather than desyncs.
             self.close_connection = True
-            self._send_problem("request_malformed", f"Content-Length {declared!r} is not a length")
+            self._send_problem(
+                "request_malformed",
+                f"Content-Length {declared!r} is not a length"
+                if length < 0
+                else f"Content-Length {declared!r} is past the "
+                f"{_MAX_BODY_BYTES} bytes this daemon reads",
+            )
             return None
         return self.rfile.read(length)
 
@@ -457,6 +468,7 @@ class RequestHandler(BaseHTTPRequestHandler):
 
     def _skip_chunked(self) -> bool:
         """Read past a chunked body without reading it; whether the stream is framed."""
+        skipped = 0
         while True:
             line = self.rfile.readline(_MAX_FRAMING_LINE + 1)
             if not line or len(line) > _MAX_FRAMING_LINE:
@@ -471,6 +483,9 @@ class RequestHandler(BaseHTTPRequestHandler):
             size = int(digits, 16)
             if size == 0:
                 break
+            skipped += size
+            if skipped > _MAX_BODY_BYTES:
+                return False
             while size:
                 block = self.rfile.read(min(size, _FRAMING_BLOCK))
                 if not block:

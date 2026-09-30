@@ -114,12 +114,13 @@ def test_the_transport_reads_a_wait_approves_it_and_the_next_ask_runs_the_body(d
         with holder.request("example.waits", ARGUMENTS) as grant:
             allowed = grant.decision_ref
             grant.record_outcome(OUTCOME)
-        # The allow minted a grant this boundary holds, so the second act on
-        # the same question runs the body without asking again (article 10).
-        with holder.request("example.waits", ARGUMENTS) as repeated:
-            assert repeated.decision_ref == allowed
-        assert counting.by_capability == {"example.waits": 1}
-    assert [record.outcome_digest for record in written] == [OUTCOME, None]
+        # The allow spent the person's one act and minted no grant, so the same
+        # act again in the same boundary waits anew, on a new reference.
+        with pytest.raises(Suspended) as repeated, holder.request("example.waits", ARGUMENTS):
+            pytest.fail("a suspended effect ran its body")
+        assert repeated.value.approval_ref != reference
+        assert counting.by_capability == {"example.waits": 2}
+    assert [record.outcome_digest for record in written] == [OUTCOME]
 
     with closing(connect(_profile(running))) as reader:
         decided = reader.read_decision("local", allowed)

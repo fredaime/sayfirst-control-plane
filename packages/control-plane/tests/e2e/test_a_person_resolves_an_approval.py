@@ -4,9 +4,10 @@
 Article 12's simple form, walked end to end against the command an operator
 runs: a governed program asks, the policy suspends it, a person reads the wait
 and approves it, and the program's next ask allows — with the reason the
-contract publishes for an approval, the grant an allow mints, and the body
-running once. Then the other three endings: a rejection denies, a resolution
-that already stands is refused, and a wait nobody answered runs out.
+contract publishes for an approval, no grant minted on the person's one act,
+and the body running once. Then the other three endings: a rejection denies,
+a resolution that already stands is refused, and a wait nobody answered runs
+out.
 
 Everything here goes over the socket. The boundary is the one a program uses,
 the reads and the acts go through the published client, and nothing in this
@@ -55,6 +56,13 @@ def _suspends(running: _Daemon, capability: str = "example.waits") -> Suspended:
     return raised.value
 
 
+def _suspends_on(boundary) -> Suspended:  # type: ignore[no-untyped-def]
+    """One ask the policy suspends, through a boundary the caller keeps open."""
+    with pytest.raises(Suspended) as raised, boundary.request("example.waits", ARGUMENTS):
+        pytest.fail("a suspended effect ran its body")
+    return raised.value
+
+
 def _denied_once(running: _Daemon) -> None:
     """One ordinary decision request, which is what drives the daemon's sweep.
 
@@ -69,12 +77,12 @@ def _denied_once(running: _Daemon) -> None:
 
 
 def test_a_person_approves_a_suspension_and_the_next_ask_runs_the_body(daemon) -> None:  # type: ignore[no-untyped-def]
-    """The whole walk: suspend, read, approve, allow with a grant, and spent after one.
+    """The whole walk: suspend, read, approve, allow once without a grant, and spent after one.
 
-    Every step is a separate connection, as a person's would be. The third ask
-    uses a boundary of its own because the second one holds the grant its allow
-    minted and would answer from it without asking — which is what a grant is
-    for, and is asserted here rather than worked around.
+    Every step is a separate connection, as a person's would be, except the
+    last two asks, which share one boundary on purpose: the allow the approval
+    produced mints no grant, so nothing in that boundary answers the second
+    ask for the daemon, and it waits anew (article 12).
     """
     running = daemon(SUSPEND)
     reader = running.client()
@@ -115,26 +123,18 @@ def test_a_person_approves_a_suspension_and_the_next_ask_runs_the_body(daemon) -
         with holder.request("example.waits", ARGUMENTS) as grant:
             allowed = grant.decision_ref
             grant.record_outcome(OUTCOME)
-        # The allow minted a grant and this boundary holds it, so the second
-        # act on the same question runs the body without asking again. That is
-        # what a grant is (article 10) and it is asserted rather than worked
-        # around — and it is the one place worth reading twice: the approval
-        # authorises one DECISION, and that decision's grant then answers the
-        # same question for its lifetime without another ask.
-        with holder.request("example.waits", ARGUMENTS) as again:
-            assert again.decision_ref == allowed
-        assert counting.by_capability == {"example.waits": 1}
-    assert [record.outcome_digest for record in written] == [OUTCOME, None]
+        # The allow spent the person's one act and minted no grant, so the same
+        # act again in the same boundary waits anew, on a new reference.
+        anew = _suspends_on(holder)
+        assert anew.approval_ref != reference
+        assert counting.by_capability == {"example.waits": 2}
+    assert [record.outcome_digest for record in written] == [OUTCOME]
 
     decided = reader.read_decision("local", allowed)
     assert isinstance(decided, Answered), decided
     assert decided.value.outcome is Outcome.ALLOW
     assert decided.value.reason is Reason.APPROVAL_GRANTED
-
-    # One resolution authorises one execution: the next ask of the same
-    # question finds the approval spent and waits anew, on a new reference.
-    anew = _suspends(running)
-    assert anew.approval_ref != reference
+    assert decided.value.extra.get("grant_id") is None
     assert anew.decision_ref != suspended.decision_ref
 
 
@@ -268,3 +268,37 @@ def _until(probe, describe) -> bool:  # type: ignore[no-untyped-def]
             return True
         assert time.monotonic() < deadline, (LAPSE_SECONDS, describe())
         time.sleep(0.2)
+
+
+def test_one_approval_is_one_execution_inside_one_live_boundary(daemon) -> None:  # type: ignore[no-untyped-def]
+    """Article 12 inside one process: approve once, ask twice in the SAME boundary, one runs.
+
+    The boundary is built the way `sayfirst instrument run` builds it — grants
+    held, one connection, no restart. A grant minted on the person's one act
+    answered every identical act after it for the grant's lifetime, so one
+    approval became as many executions as fit in that lifetime.
+    """
+    running: _Daemon = daemon(SUSPEND)
+    holder, counting, _written = running.boundary()
+    with closing(holder):
+        waiting = _suspends_on(holder)
+        approved = running.client().resolve_approval(
+            ApprovalResolution("local", waiting.approval_ref, Resolution.APPROVE, "once")
+        )
+        assert isinstance(approved, Answered), approved
+
+        executed: list[str] = []
+        with holder.request("example.waits", ARGUMENTS) as grant:
+            executed.append(grant.decision_ref)
+            grant.record_outcome(OUTCOME)
+
+        again = _suspends_on(holder)
+        assert again.approval_ref != waiting.approval_ref
+        assert len(executed) == 1, "exactly one execution per approval"
+        assert counting.by_capability == {"example.waits": 3}, counting.by_capability
+        assert not holder._store._held, "an approval-derived allow leaves no grant behind"
+
+    decided = running.client().read_decision("local", executed[0])
+    assert isinstance(decided, Answered), decided
+    assert decided.value.reason.value == "approval_granted"
+    assert decided.value.extra.get("grant_id") is None
