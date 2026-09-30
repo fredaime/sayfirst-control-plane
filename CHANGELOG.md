@@ -8,6 +8,31 @@ that this file does not announce under its own release fails the packaging test.
 
 ## Unreleased
 
+## 0.3.2
+
+Security fixes from a review of 0.3.1. Upgrade the daemon: every boundary,
+the command-line client and the demonstration inherit these through it.
+
+- An allow produced by a person's approval no longer carries a grant. A
+  boundary holding grants (the default, and what the command-line client's
+  instrumented run builds) answered every identical act after that allow from
+  its grant, without asking, so one approval could run the act many times in
+  one process. It now runs once, and the same act asked again waits under a
+  new approval.
+- A request body is read up to 65536 bytes; a longer declared length is
+  refused `request_malformed` before any of it is read, and a chunked body
+  is skipped up to the same bound.
+- The socket directory check judges every directory the configured path
+  crosses and refuses a link on it that neither root nor the daemon owns;
+  the daemon binds, sets and removes the socket under the directory it
+  judged. A deployment whose path crosses a link someone else can replace
+  no longer starts.
+- `sayfirst-daemon down` refuses to run as root, and `up` and `down` refuse a
+  quickstart directory that is a link, is not this account's or can be written
+  by other accounts, and a lock that is a link; each exits 78, written
+  `quickstart: …`, and `down` then signals nothing. A record that is a link or
+  belongs to another account is not read as a record.
+
 ## 0.3.1
 
 - The published replay harness asks for the answer without the event stream where a

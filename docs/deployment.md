@@ -40,6 +40,12 @@ parent directory at `0700`, whatever the umask it inherited, because a level
 it created and the check refuses is a daemon that cannot start until a human
 repairs it by hand.
 
+Every directory the configured path crosses is judged, including one that holds
+a link on the way, and a link on the path must belong to root or to the
+daemon's account; the daemon binds, sets and removes the socket under the
+directory it judged. A path through a link someone else can replace is refused
+`socket_directory_unprotected`.
+
 ## Deployment forms
 
 ### Bare host
@@ -88,6 +94,9 @@ surface does the same thing and verifies the server first:
 ```
 sayfirstd whoami --socket /run/sayfirst/daemon.sock --mode system --daemon-user sayfirst
 ```
+
+A request body is read up to 65536 bytes; a longer declared length is refused
+`request_malformed` before any of it is read, and the connection ends.
 
 What the daemon says about itself — the integrity grade, its basis, the
 interval it is re-evaluated on, and the active privacy provider — is read the
@@ -281,6 +290,11 @@ install -d -m 0755 -o root -g root /run/sayfirst
 install -m 0640 -o root -g sayfirst policy.toml /etc/sayfirst/policy.toml
 install -d -m 0700 -o sayfirst -g sayfirst /var/lib/sayfirst/evidence
 ```
+
+The socket directory is root's, not `run_as`'s. A directory the `run_as` account
+can write lets that account swap the socket's name for something else between the
+bind and the `chmod`; the daemon then refuses to start, but the mode may already
+have been set on whatever the name pointed to.
 
 A policy file copied into place as root can arrive `root:root 0600` — the
 mode of a source the operator kept private, or of any source copied under a
@@ -525,7 +539,8 @@ already running. It exits `78`, the status of a start the daemon refuses, for a
 refusal of its own, written `quickstart: …` — run as root;
 `~/.sayfirst/quickstart/` or its `evidence/` that cannot be created, or that is
 not a directory, belongs to another account or can be reached by other
-accounts; a `daemon.toml` that configures system mode — and for a `daemon.toml`
+accounts; a `daemon.lock` that is a link; a `daemon.toml` that
+configures system mode — and for a `daemon.toml`
 the daemon's own reader refuses, written as the daemon writes it,
 `reason: detail`. When the daemon it started ends before it has answered, `up`
 exits with that daemon's status — `78` for a start the daemon refuses, its
@@ -536,7 +551,12 @@ when the daemon did not answer within 20 seconds; each of those says on standard
 error what was left running, if anything, and by which pid. `down` exits `0`
 when it stopped the daemon or found nothing to stop, and `1` when it left
 something running: a control plane it did not start, a process it cannot prove
-is its daemon, or a daemon that has not ended 20 seconds after its `SIGTERM`. An
+is its daemon, or a daemon that has not ended 20 seconds after its `SIGTERM`. It
+exits `78`, written `quickstart: …`, when run as root, or when
+`~/.sayfirst/quickstart/` is a link, is not a directory of this account's, or
+can be written by other accounts, or when `daemon.lock` is a link — and then it
+signals nothing. A record
+another account owns, or one that is a link, is not read as a record. An
 invocation the command does not accept — `up` without `--quickstart`, `--config`
 given to `up` or `down` — is a usage error, `2`.
 

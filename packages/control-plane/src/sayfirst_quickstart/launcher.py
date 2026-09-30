@@ -44,6 +44,7 @@ from __future__ import annotations
 import contextlib
 import ctypes
 import ctypes.util
+import errno
 import fcntl
 import json
 import os
@@ -295,6 +296,11 @@ def _private_directory(path: Path, *, create_only: bool) -> None:
         finally:
             os.close(opened)
         return
+    _judge_private_directory(path)
+
+
+def _judge_private_directory(path: Path) -> None:
+    """An existing directory, judged by its own entry, no link followed: this account's, private."""
     found = os.lstat(path)
     if not stat_module.S_ISDIR(found.st_mode):
         raise QuickstartRefused(f"{path} is not a directory of its own; move it aside")
@@ -496,9 +502,24 @@ def write_record(names: Layout, started: Started) -> None:
 def read_record(names: Layout) -> Started | None:
     """The recorded start, or `None` for a record that is absent or does not read."""
     try:
-        document = json.loads(names.record.read_text(encoding="utf-8"))
+        descriptor = os.open(names.record, os.O_RDONLY | os.O_NOFOLLOW)
+    except OSError:
+        return None
+    try:
+        found = os.fstat(descriptor)
+        if not stat_module.S_ISREG(found.st_mode) or found.st_uid != os.geteuid():
+            # Not a file of this account's: it proves nothing about a start of
+            # this account's, so it is not read as one. (Who else can write it
+            # is the directory's question, which `down` asks before this.)
+            return None
+        with os.fdopen(descriptor, "r", encoding="utf-8") as stream:
+            descriptor = None
+            document = json.loads(stream.read())
     except (OSError, ValueError, RecursionError):
         return None
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
     if not isinstance(document, dict):
         return None
     pid, began, address = document.get("pid"), document.get("began"), document.get("socket")
@@ -530,8 +551,16 @@ def _exclusive(names: Layout):
     quickstart's own. It is advisory, so the daemon — which never takes it — is
     never blocked by it, and the descriptor is this process's alone (closed on
     exec), so a started daemon does not inherit and hold it.
+
+    A lock that is a link is refused by name, before anything is locked: the
+    open does not follow it, so nothing it points at is created or changed.
     """
-    descriptor = os.open(names.lock, os.O_WRONLY | os.O_CREAT, PRIVATE_FILE)
+    try:
+        descriptor = os.open(names.lock, os.O_WRONLY | os.O_CREAT | os.O_NOFOLLOW, PRIVATE_FILE)
+    except OSError as error:
+        if error.errno != errno.ELOOP:
+            raise
+        raise QuickstartRefused(f"{names.lock} is a link; move it aside") from error
     try:
         os.fchmod(descriptor, PRIVATE_FILE)
         fcntl.flock(descriptor, fcntl.LOCK_EX)
@@ -761,7 +790,12 @@ def up(
     # both start a daemon, and the second would write over the first's only
     # record. The readiness wait is left outside the lock, so a start does not
     # hold it for the whole of a slow answer.
-    with _exclusive(names):
+    with contextlib.ExitStack() as held:
+        try:
+            held.enter_context(_exclusive(names))
+        except QuickstartRefused as refusal:
+            print(f"quickstart: {refusal}", file=err)
+            return EX_CONFIG
         record = read_record(names)
         identity = _identity(record) if record is not None else "gone"
         if record is not None and identity == "unknown":
@@ -986,12 +1020,29 @@ def down(
 ) -> int:
     """Stop the daemon `up` started, once it is proved to be that one, and no other."""
     names = layout(home)
-    if not names.root.is_dir():
+    if os.geteuid() == 0:
+        print(
+            "quickstart: `down` stops one ordinary account's quickstart daemon, and it is "
+            "being run as root. Run it as the account that ran `up`, without a privilege tool",
+            file=err,
+        )
+        return EX_CONFIG
+    if not os.path.lexists(names.root):
         # Nothing was ever started under this home: there is no quickstart
         # directory to hold a record or a lock, and nothing to stop.
         print("SayFirst Control Plane not running", file=out)
         return 0
-    with _exclusive(names):
+    try:
+        _judge_private_directory(names.root)
+    except QuickstartRefused as refusal:
+        print(f"quickstart: {refusal}; nothing was signalled", file=err)
+        return EX_CONFIG
+    with contextlib.ExitStack() as held:
+        try:
+            held.enter_context(_exclusive(names))
+        except QuickstartRefused as refusal:
+            print(f"quickstart: {refusal}; nothing was signalled", file=err)
+            return EX_CONFIG
         record = read_record(names)
         if record is None:
             address = _configured_address(names, read_settings_from)

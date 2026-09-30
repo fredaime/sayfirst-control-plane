@@ -26,6 +26,7 @@ class _ScriptedOs:
 
     def __init__(self, *, file_mode: int, file_gid: int = 900, denied: str = "") -> None:
         self.calls: list[str] = []
+        self.keywords: dict[str, dict[str, object]] = {}
         self._file_mode = file_mode
         self._file_gid = file_gid
         self._denied = denied
@@ -33,8 +34,9 @@ class _ScriptedOs:
     def __getattr__(self, name: str) -> object:
         if name in _RECORDED:
 
-            def call(*_: object) -> int:
+            def call(*_: object, **keywords: object) -> int:
                 self.calls.append(name)
+                self.keywords[name] = keywords
                 if name == self._denied:
                     raise PermissionError(1, "Operation not permitted")
                 return 0
@@ -42,8 +44,8 @@ class _ScriptedOs:
             return call
         return getattr(real_os, name)
 
-    def stat(self, path: object, **_: object) -> object:
-        self.calls.append("stat")
+    def lstat(self, path: object, **_: object) -> object:
+        self.calls.append("lstat")
         outer = self
 
         class _Result:
@@ -59,7 +61,7 @@ class _ScriptedOs:
 
 @pytest.fixture
 def scripted(monkeypatch: pytest.MonkeyPatch):  # type: ignore[no-untyped-def]
-    def factory(file_mode: int = 0o100660, file_gid: int = 900, denied: str = "") -> _ScriptedOs:
+    def factory(file_mode: int = 0o140660, file_gid: int = 900, denied: str = "") -> _ScriptedOs:
         seam = _ScriptedOs(file_mode=file_mode, file_gid=file_gid, denied=denied)
         monkeypatch.setattr(socket_server, "os", seam)
         monkeypatch.setattr(
@@ -128,7 +130,7 @@ def test_a_system_daemon_listens_only_after_it_has_dropped(
             "umask",
             "chown",
             "chmod",
-            "stat",
+            "lstat",
             "initgroups",
             "setgid",
             "setuid",
@@ -137,6 +139,25 @@ def test_a_system_daemon_listens_only_after_it_has_dropped(
     finally:
         daemon.stop()
     assert daemon.daemon_uid == 4242
+
+
+def test_the_socket_owner_is_set_on_the_name_bound_never_through_a_link(
+    tmp_path: Path,
+    scripted,  # type: ignore[no-untyped-def]
+) -> None:
+    """Article 6: root's `chown` does not follow a name swapped for a link after bind.
+
+    The closing `lstat` sees a link only once the call has gone through it; a
+    `chown` that followed would already have handed its target to the socket
+    group. So the call itself is told not to follow.
+    """
+    seam = scripted()
+    daemon = _daemon(tmp_path, run_as="")
+    daemon.start()
+    try:
+        assert seam.keywords["chown"] == {"follow_symlinks": False}
+    finally:
+        daemon.stop()
 
 
 def test_the_composition_happens_after_the_drop_and_before_listen(
@@ -255,12 +276,31 @@ def test_a_file_mode_the_daemon_did_not_ask_for_stops_it(
     tmp_path: Path,
     scripted,  # type: ignore[no-untyped-def]
 ) -> None:
-    """Article 6, rule S1: the mode is verified by `stat`, not assumed from `chmod`."""
-    seam = scripted(file_mode=0o100666)
+    """Article 6, rule S1: the mode is verified by `lstat`, not assumed from `chmod`."""
+    seam = scripted(file_mode=0o140666)
     daemon = _daemon(tmp_path, run_as="")
     with pytest.raises(StartRefused) as refusal:
         daemon.start()
     assert refusal.value.reason == "socket_mode_invalid"
+    assert "listen" not in seam.calls
+
+
+def test_a_name_that_is_not_the_socket_the_daemon_bound_stops_it(
+    tmp_path: Path,
+    scripted,  # type: ignore[no-untyped-def]
+) -> None:
+    """Article 6: the closing `lstat` reads the name itself, and it must be the socket.
+
+    A regular file at the name, at exactly the mode and owner asked for, is
+    still not what this daemon bound: a chmod that landed on it went through
+    something at the name that was not the socket.
+    """
+    seam = scripted(file_mode=0o100660)
+    daemon = _daemon(tmp_path, run_as="")
+    with pytest.raises(StartRefused) as refusal:
+        daemon.start()
+    assert refusal.value.reason == "socket_mode_invalid"
+    assert "not the socket" in refusal.value.detail
     assert "listen" not in seam.calls
 
 
@@ -294,7 +334,7 @@ def test_a_socket_group_the_daemon_did_not_get_stops_it(
     scripted,  # type: ignore[no-untyped-def]
 ) -> None:
     """Article 6, rule S1: the group is the admission list, so it is verified too."""
-    seam = scripted(file_mode=0o100660, file_gid=41)
+    seam = scripted(file_mode=0o140660, file_gid=41)
     daemon = _daemon(tmp_path, run_as="")
     with pytest.raises(StartRefused) as refusal:
         daemon.start()
@@ -308,7 +348,7 @@ def test_the_verified_ownership_is_the_owner_and_the_group_together(
     scripted,  # type: ignore[no-untyped-def]
 ) -> None:
     """Article 6, rule S1: uid 0 and the configured group, both checked by stat."""
-    seam = scripted(file_mode=0o100660, file_gid=900)
+    seam = scripted(file_mode=0o140660, file_gid=900)
     daemon = _daemon(tmp_path, run_as="")
     daemon.start()
     try:
