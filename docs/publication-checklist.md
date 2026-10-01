@@ -43,7 +43,7 @@ the hosting platform.
 - [ ] Confirm or rename the public repository before the tag. Every URL these distributions publish
   begins with `https://github.com/fredaime/sayfirst-control-plane`, and
   `tests/test_pointers_survive_publication.py` holds that name. A different name is a change to
-  all seven project files and to the guard, in one commit, before the tag is cut.
+  all eight project files and to the guard, in one commit, before the tag is cut.
 - [ ] Create the public repository, fresh, with private vulnerability reporting enabled in the same
   act (article 0), so that `SECURITY.md` names a channel that exists from the first public
   minute — the hosting platform allows that setting on a public repository only. The recipe is
@@ -73,6 +73,18 @@ the hosting platform.
   environment demands an approval, and whether the index trusts this workflow's identity, are
   settings of the repository and of the index that no file here can read, and none of them claims
   to.
+- [ ] **Create a pending publisher for every project the index does not know yet.** A release
+  that adds a project uploads its files one at a time and stops at the first file of a project
+  the index does not know: what was sent before it stays, which may be nothing or part of a
+  project, and a file the index already holds cannot be sent again. A project that has never
+  been uploaded is trusted by nothing until a pending publisher names it. For
+  `sayfirst-daemon`, first released in 0.3.3: on the index, under the account's publishing
+  settings, add a pending publisher with the project name `sayfirst-daemon`, this public
+  repository, the workflow `release.yml` and the environment `pypi`. The index refused a second
+  pending publisher for one repository, workflow and environment on 2026-09-17, so a release
+  that adds two projects the index does not know is two releases, or one upload by hand. No
+  file here can read whether it was done, and a release rehearsed with publishing switched off
+  cannot either, since it uploads nothing.
 - [ ] **Set the sign-off check as a required status** in the public repository's branch protection.
   Contributions arrive under the Developer Certificate of Origin (article 15), and whether a
   failing check blocks a merge is a branch-protection setting of the public repository which no

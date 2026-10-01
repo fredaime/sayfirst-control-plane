@@ -20,4 +20,4 @@ def test_the_contract_distribution_has_no_runtime_dependency() -> None:
     """Articles 13 and 14: the contract wheel installs no third-party runtime."""
     project = tomllib.loads((CONTRACT / "pyproject.toml").read_text(encoding="utf-8"))["project"]
     assert project["dependencies"] == []
-    assert project["optional-dependencies"] == {"stub": ["sayfirst-contract-stub==0.3.2"]}
+    assert project["optional-dependencies"] == {"stub": ["sayfirst-contract-stub==0.3.3"]}

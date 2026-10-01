@@ -41,6 +41,7 @@ Newest first. One row per release.
 
 | Release | Concepts added | Counting rule, and who counted |
 |---|---|---|
+| 0.3.3 | not reported | not reported — the count is measured on the other side of the boundary and had not been answered when this release was cut |
 | 0.3.2 | not reported | not reported — the count is measured on the other side of the boundary and had not been answered when this release was cut |
 | 0.3.1 | not reported | not reported — the count is measured on the other side of the boundary and had not been answered when this release was cut |
 | 0.3.0 | not reported | not reported — the count is measured on the other side of the boundary and had not been answered when this release was cut |

@@ -123,7 +123,7 @@ def test_plugins_list_renders_empty_observation_as_an_explicit_empty_result() ->
 def test_the_surface_depends_on_the_contract_and_never_on_the_server() -> None:
     with (SURFACE_ROOT / "pyproject.toml").open("rb") as stream:
         project = tomllib.load(stream)["project"]
-    assert project["dependencies"] == ["sayfirst-contract==0.3.2"]
+    assert project["dependencies"] == ["sayfirst-contract==0.3.3"]
 
     imports: set[str] = set()
     for path in (SURFACE_ROOT / "src" / "sayfirstd").rglob("*.py"):

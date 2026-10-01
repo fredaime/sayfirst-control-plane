@@ -46,7 +46,7 @@ def top_release(changelog: str) -> str | None:
 def test_every_distribution_here_carries_the_same_version() -> None:
     """Article 16: they move together or the release is not one release."""
     versions = distribution_versions(REPOSITORY)
-    assert len(versions) == 7, versions
+    assert len(versions) == 8, versions
     assert len(set(versions.values())) == 1, versions
 
 

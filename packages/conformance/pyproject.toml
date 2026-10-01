@@ -1,11 +1,11 @@
 # SPDX-License-Identifier: Apache-2.0
 [project]
 name = "sayfirst-conformance"
-version = "0.3.2"
+version = "0.3.3"
 description = "Contract conformance replay for control-plane servers"
 readme = "README.md"
 requires-python = ">=3.12,<3.15"
-dependencies = ["sayfirst-contract==0.3.2"]
+dependencies = ["sayfirst-contract==0.3.3"]
 license = "Apache-2.0"
 
 authors = [{ name = "fredaime", email = "frederic.aime@gmail.com" }]

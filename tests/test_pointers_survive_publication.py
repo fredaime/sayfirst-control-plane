@@ -125,7 +125,7 @@ def test_the_walk_finds_the_documents_and_the_distributions_this_rule_is_about()
     assert len(DOCUMENTS) >= 8, f"only {len(DOCUMENTS)} reader-facing documents found"
     for required in ("README.md", "NOTICE", "SECURITY.md", "CONSTITUTION.md"):
         assert required in names, f"{required} is not being scanned by this rule"
-    assert len(DISTRIBUTIONS) == 7, DISTRIBUTIONS
+    assert len(DISTRIBUTIONS) == 8, DISTRIBUTIONS
 
 
 @pytest.mark.parametrize("path", DOCUMENTS, ids=lambda p: p.as_posix())
@@ -177,7 +177,7 @@ def test_every_published_url_that_names_a_file_resolves_to_one_this_tree_tracks(
 def test_the_rule_fires_on_a_published_url_naming_a_path_that_moved(tmp_path: Path) -> None:
     """WATCHED FIRING, on the rename the base alone cannot see.
 
-    Read through the same reader the seven real distributions are read through,
+    Read through the same reader the eight real distributions are read through,
     and resolved against the same tracked set, so what it proves is that this
     run's check would have caught it.
     """
@@ -208,7 +208,7 @@ def test_the_rule_leaves_the_repository_url_alone() -> None:
 def test_the_rule_fires_on_a_project_url_outside_the_public_repository(tmp_path: Path) -> None:
     """WATCHED FIRING, for the second half: a distribution whose page would point
     a reader at the repository that is never published, read through the same
-    reader the seven real distributions are read through."""
+    reader the eight real distributions are read through."""
     package = tmp_path / "planted"
     package.mkdir()
     (package / "pyproject.toml").write_text(

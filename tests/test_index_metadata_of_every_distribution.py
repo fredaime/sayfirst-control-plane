@@ -38,7 +38,7 @@ REPOSITORY = Path(__file__).resolve().parents[1]
 #: one the index shows as the author (article 15's sign-off, article 16's
 #: maintainer-led project). A display name for the index is a decision the
 #: publication checklist carries as an act of the operator; what this guard
-#: holds is that the seven distributions agree, whatever it is.
+#: holds is that the eight distributions agree, whatever it is.
 AUTHORS = [{"name": "fredaime", "email": "frederic.aime@gmail.com"}]
 
 #: The development status these distributions claim, one spelling of it.
@@ -101,7 +101,7 @@ def disagreements(package: Path) -> list[str]:
 def test_the_walk_finds_the_distributions_this_rule_is_about() -> None:
     """ANTI-VACUITY. A glob that matched nothing would make every assertion
     below pass by absence, which is the failure this repository keeps finding."""
-    assert len(DISTRIBUTIONS) == 7, DISTRIBUTIONS
+    assert len(DISTRIBUTIONS) == 8, DISTRIBUTIONS
     for package in DISTRIBUTIONS:
         assert (package / "pyproject.toml").is_file(), package
 
@@ -135,7 +135,7 @@ def test_no_distribution_carries_a_classifier_this_project_refuses(package: Path
 
 
 def test_the_rule_fires_on_a_classifier_the_specifier_does_not_cover(tmp_path: Path) -> None:
-    """WATCHED FIRING. A rule whose only evidence is that the seven files agree
+    """WATCHED FIRING. A rule whose only evidence is that the eight files agree
     today would also pass if it had stopped applying — and they do all agree, so
     the proof has to be planted. This is the defect the floor moving leaves
     behind: one interpreter claimed that the specifier no longer admits.
@@ -178,7 +178,7 @@ def test_the_rule_fires_on_an_interpreter_admitted_and_not_claimed(tmp_path: Pat
     assert disagreements(package) == [f"admits but does not claim: {ANY_PYTHON_THREE}.14"]
 
 
-def test_the_rule_reads_the_specifier_the_seven_files_really_carry() -> None:
+def test_the_rule_reads_the_specifier_the_eight_files_really_carry() -> None:
     """WATCHED NOT FIRING. The derivation is only worth anything if it produces
     the list the tree actually holds: `>=3.12,<3.15` is 3.12, 3.13 and 3.14, and
     a reader that produced anything else would make the four cases above agree

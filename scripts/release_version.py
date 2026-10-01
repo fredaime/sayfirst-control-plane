@@ -7,7 +7,7 @@ the release workflow, and whoever is about to cut a tag — and a version spelle
 three times is a version that will eventually be spelled two ways. So it is read
 here, from the project files themselves.
 
-What is never written down a second time is the DECLARATION: the seven project
+What is never written down a second time is the DECLARATION: the eight project
 files declare the version, this reader is how anything else asks what they say,
 and a fourth place that decides it would be a second source of truth. A version
 that appears in the changelog, in a row of `docs/NEUTRALITY.md` or in the
@@ -64,8 +64,8 @@ def release_version(repository: Path) -> str:
 
     Raises `ValueError` naming the distributions that disagree. A repository
     that cannot answer this question has no release to make, and saying so is
-    the point: the alternative is a tag that publishes six distributions at one
-    version and a seventh at another.
+    the point: the alternative is a tag that publishes seven distributions at one
+    version and an eighth at another.
     """
     versions = distribution_versions(repository)
     if not versions:
