@@ -87,6 +87,10 @@ ACTS: tuple[tuple[str, str], ...] = (
         "trusted-publishing relationship",
     ),
     (
+        "a pending publisher for each project the index does not know yet",
+        "pending publisher for every project",
+    ),
+    (
         "the sign-off check is a required status",
         "required status",
     ),
@@ -108,7 +112,7 @@ ACTS: tuple[tuple[str, str], ...] = (
 #: `len(ACTS)`, so that shrinking the act list cannot quietly shrink the floor
 #: with it: the two have to be edited apart, and a diff that moves one alone is
 #: a diff a reader can see.
-BULLET_FLOOR = 11
+BULLET_FLOOR = 12
 
 #: A bullet and everything indented under it, up to the next bullet, the next
 #: heading, or the end.

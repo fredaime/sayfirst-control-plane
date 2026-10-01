@@ -604,7 +604,7 @@ def test_composition_evidence_identifies_the_code_that_was_loaded() -> None:
             "content_digest",
         }
         assert provider["distribution"] == "sayfirst-control-plane"
-        assert provider["distribution_version"] == "0.3.2"
+        assert provider["distribution_version"] == "0.3.3"
         assert provider["entry_point"].startswith("sayfirst_control_plane.plugins.defaults:")
         assert re.fullmatch(r"sha256:[0-9a-f]{64}", provider["content_digest"])
 

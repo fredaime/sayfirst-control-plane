@@ -1,11 +1,18 @@
 # SPDX-License-Identifier: Apache-2.0
 [project]
-name = "sayfirstd"
+name = "sayfirst-daemon"
 version = "0.3.3"
-description = "The operator surface of the open control plane's daemon"
+description = "Installs the open control plane's daemon; the name of its command, held by the project"
 readme = "README.md"
 requires-python = ">=3.12,<3.15"
-dependencies = ["sayfirst-contract==0.3.3"]
+# One dependency and nothing else: this distribution is the name of the
+# daemon's command, held on the index so that handing the name to an installer
+# installs the daemon. It declares no command — the command belongs to
+# `sayfirst-control-plane`, and `tests/test_client_distribution_names.py`
+# forbids two distributions of this repository to install one — and it ships no
+# module. `tests/test_the_daemon_name_holds_a_name_and_nothing_else.py` holds
+# all of that.
+dependencies = ["sayfirst-control-plane==0.3.3"]
 license = "Apache-2.0"
 
 authors = [{ name = "fredaime", email = "frederic.aime@gmail.com" }]
@@ -17,29 +24,22 @@ classifiers = [
   "Programming Language :: Python :: 3.14",
 ]
 
-# The public repository this distribution sends a reader to. It was created
-# fresh, as article 0 asks, in the act that published it on 2026-09-17, under
-# the name the operator chose. `tests/test_pointers_survive_publication.py`
-# holds these URLs, so a rename lands in every project file and in the guard
-# together or not at all. No licence classifier: the licence is declared as an
-# expression above, and an index refuses a distribution that carries both.
 [project.urls]
 Repository = "https://github.com/fredaime/sayfirst-control-plane"
-Documentation = "https://github.com/fredaime/sayfirst-control-plane/blob/main/packages/cli/README.md"
+Documentation = "https://github.com/fredaime/sayfirst-control-plane/blob/main/packages/daemon-name/README.md"
 Changelog = "https://github.com/fredaime/sayfirst-control-plane/blob/main/CHANGELOG.md"
-
-[project.scripts]
-sayfirstd = "sayfirstd.main:run"
 
 [build-system]
 requires = ["hatchling==1.32.0"]
 build-backend = "hatchling.build"
 
 [tool.uv.sources]
-sayfirst-contract = { workspace = true }
+sayfirst-control-plane = { workspace = true }
 
+# No module is selected, on purpose: the wheel is its metadata and the two
+# notices.
 [tool.hatch.build.targets.wheel]
-packages = ["src/sayfirstd"]
+bypass-selection = true
 
 [tool.hatch.build.targets.sdist.force-include]
 "../../LICENSE" = "LICENSE"

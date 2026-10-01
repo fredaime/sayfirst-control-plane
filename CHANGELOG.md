@@ -8,6 +8,15 @@ that this file does not announce under its own release fails the packaging test.
 
 ## Unreleased
 
+## 0.3.3
+
+- A new distribution, `sayfirst-daemon`, holds the name of the daemon's
+  command on the index. It installs no code and declares no command: it depends
+  on `sayfirst-control-plane` at the same version, so `pip install
+  sayfirst-daemon` installs the daemon. Until this release the index knew no
+  project of that name, and anybody could have published one.
+- The other seven distributions change in their version and their pins only.
+
 ## 0.3.2
 
 Security fixes from a review of 0.3.1. Upgrade the daemon: every boundary,
