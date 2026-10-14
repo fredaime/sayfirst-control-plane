@@ -2,31 +2,58 @@
 [project]
 name = "sayfirst-control-plane"
 version = "0.3.3"
-description = "The host-scoped open control plane"
+description = "SayFirst control plane (sayfirst-control-plane): a local daemon AI agents and programs ask before an effect — allow, deny or suspend from a policy a person reads, with evidence anyone can verify offline"
 readme = "README.md"
 requires-python = ">=3.12,<3.15"
 dependencies = ["sayfirst-contract==0.3.3"]
 license = "Apache-2.0"
 
 authors = [{ name = "fredaime", email = "frederic.aime@gmail.com" }]
+keywords = [
+  "sayfirst",
+  "sayfirst-control-plane",
+  "sayfirst-cli",
+  "ai-agents",
+  "agent-security",
+  "ai-security",
+  "llm-security",
+  "runtime-governance",
+  "policy-enforcement",
+  "human-in-the-loop",
+  "audit-trail",
+]
 classifiers = [
   "Development Status :: 4 - Beta",
+  "Environment :: Console",
+  "Environment :: No Input/Output (Daemon)",
+  "Intended Audience :: Developers",
+  "Intended Audience :: System Administrators",
+  "Operating System :: MacOS",
+  "Operating System :: POSIX :: Linux",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
+  "Topic :: Security",
+  "Topic :: System :: Systems Administration",
 ]
 
 # The public repository this distribution sends a reader to. It was created
 # fresh, as article 0 asks, in the act that published it on 2026-09-17, under
 # the name the operator chose. `tests/test_pointers_survive_publication.py`
 # holds these URLs, so a rename lands in every project file and in the guard
-# together or not at all. No licence classifier: the licence is declared as an
-# expression above, and an index refuses a distribution that carries both.
+# together or not at all. The last two send a reader to the client that asks
+# this daemon — its repository and its page on the index — and the same guard
+# holds that they point there and nowhere else. No licence classifier: the
+# licence is declared as an expression above, and an index refuses a
+# distribution that carries both.
 [project.urls]
 Repository = "https://github.com/fredaime/sayfirst-control-plane"
 Documentation = "https://github.com/fredaime/sayfirst-control-plane/blob/main/packages/control-plane/README.md"
 Changelog = "https://github.com/fredaime/sayfirst-control-plane/blob/main/CHANGELOG.md"
+Issues = "https://github.com/fredaime/sayfirst-control-plane/issues"
+"Command line (sayfirst-cli)" = "https://github.com/fredaime/sayfirst-cli"
+"Command line on PyPI" = "https://pypi.org/project/sayfirst-cli/"
 
 [project.scripts]
 # The front that stands before the daemon's own command line: it hands `serve`

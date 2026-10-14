@@ -1,7 +1,23 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
-# `sayfirst` control plane
+# SayFirst control plane (`sayfirst-control-plane`) — ask before you act
 
-**SayFirst — ask before you act.** This repository is the engine room: the
+**SayFirst (`sayfirst-control-plane`) is open-source runtime governance for AI
+agents: a local control plane that a program asks before an effect.** The
+daemon answers allow, deny or suspend from a policy file a person can read,
+over a Unix socket that learns who is asking from the kernel; a suspension
+waits for a person, and every decision lands in a hash-chained record anyone
+can verify offline. No cloud account, no token, no port. Its command line is
+[`sayfirst-cli`](https://github.com/fredaime/sayfirst-cli).
+
+[![PyPI - sayfirst-control-plane](https://img.shields.io/pypi/v/sayfirst-control-plane.svg?label=PyPI%20sayfirst-control-plane)](https://pypi.org/project/sayfirst-control-plane/)
+[![PyPI - sayfirst-cli](https://img.shields.io/pypi/v/sayfirst-cli.svg?label=PyPI%20sayfirst-cli)](https://pypi.org/project/sayfirst-cli/)
+
+**Links:** [control plane on GitHub](https://github.com/fredaime/sayfirst-control-plane) ·
+[control plane on PyPI](https://pypi.org/project/sayfirst-control-plane/) ·
+[`sayfirst-cli` on GitHub](https://github.com/fredaime/sayfirst-cli) ·
+[`sayfirst-cli` on PyPI](https://pypi.org/project/sayfirst-cli/)
+
+This repository is the engine room: the
 daemon that answers, the contract it answers over, the boundary a governed
 program calls, the policy format a person reads, and the evidence chain anyone
 can check afterwards.

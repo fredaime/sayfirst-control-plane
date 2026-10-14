@@ -16,6 +16,14 @@ So the rule is the agreement rather than the list: the Python classifiers are
 DERIVED from each distribution's own `requires-python` and compared, which is
 the one reading that cannot go stale when the floor moves.
 
+The classifiers that describe rather than admit — who the distribution is for,
+which operating systems, which topic — are drawn from a vocabulary this module
+names, and from nothing else. Each one in it is a claim the tree can stand
+behind: the identity guards run on Linux and on macOS, and on no other system,
+so those two are the operating systems a page may name. A classifier outside
+the vocabulary is refused the way an unadmitted interpreter is, because it is
+the same defect: a page saying something nobody decided.
+
 The two absences are held too, because both are refusals rather than omissions.
 No licence classifier: the licence is declared as an expression, and an index
 refuses a distribution that carries both. No typing classifier: these
@@ -52,6 +60,25 @@ ANY_PYTHON_THREE = "Programming Language :: Python :: 3"
 #: specifier this guard cannot read is one it refuses to vouch for rather than
 #: one it passes.
 SPECIFIER = re.compile(r">=\s*3\.(\d+)\s*,\s*<\s*3\.(\d+)")
+
+#: The descriptive classifiers a distribution may carry, each a claim the tree
+#: stands behind. Which of them a distribution carries is its own choice; what
+#: is held is that it carries no other. Every entry is a classifier the index
+#: knows, spelt as the index spells it: an unknown one fails the upload.
+DESCRIPTIVE = frozenset(
+    {
+        "Environment :: Console",
+        "Environment :: No Input/Output (Daemon)",
+        "Intended Audience :: Developers",
+        "Intended Audience :: System Administrators",
+        "Operating System :: MacOS",
+        "Operating System :: POSIX :: Linux",
+        "Topic :: Security",
+        "Topic :: Software Development :: Libraries",
+        "Topic :: Software Development :: Testing",
+        "Topic :: System :: Systems Administration",
+    }
+)
 
 #: Classifiers this project refuses to carry, and the reason each is refused.
 REFUSED = {
@@ -93,7 +120,7 @@ def disagreements(package: Path) -> list[str]:
     found = set(table.get("classifiers") or [])
     owed = expected_classifiers(table["requires-python"])
     return sorted(
-        [f"claims but does not admit: {item}" for item in sorted(found - owed)]
+        [f"claims but does not admit: {item}" for item in sorted(found - owed - DESCRIPTIVE)]
         + [f"admits but does not claim: {item}" for item in sorted(owed - found)]
     )
 
@@ -176,6 +203,27 @@ def test_the_rule_fires_on_an_interpreter_admitted_and_not_claimed(tmp_path: Pat
         encoding="utf-8",
     )
     assert disagreements(package) == [f"admits but does not claim: {ANY_PYTHON_THREE}.14"]
+
+
+def test_the_rule_fires_on_an_operating_system_the_guards_never_run_on(tmp_path: Path) -> None:
+    """WATCHED FIRING, on the descriptive half: a page naming a system the
+    identity guards have never run on is refused like an unadmitted
+    interpreter, and the vocabulary beside it is not."""
+    package = tmp_path / "planted"
+    package.mkdir()
+    (package / "pyproject.toml").write_text(
+        '[project]\nname = "planted"\nversion = "0.0.0"\n'
+        'requires-python = ">=3.12,<3.15"\n'
+        "classifiers = [\n"
+        + "".join(f'  "{item}",\n' for item in sorted(expected_classifiers(">=3.12,<3.15")))
+        + "".join(f'  "{item}",\n' for item in sorted(DESCRIPTIVE))
+        + '  "Operating System :: Microsoft :: Windows",\n'
+        "]\n",
+        encoding="utf-8",
+    )
+    assert disagreements(package) == [
+        "claims but does not admit: Operating System :: Microsoft :: Windows"
+    ]
 
 
 def test_the_rule_reads_the_specifier_the_eight_files_really_carry() -> None:

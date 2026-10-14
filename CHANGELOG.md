@@ -8,6 +8,14 @@ that this file does not announce under its own release fails the packaging test.
 
 ## Unreleased
 
+- The index pages of the eight distributions carry the classifiers that
+  describe them — the audience, Linux and macOS, the topic — drawn from a
+  vocabulary the metadata guard names and holds. `sayfirst-control-plane` says
+  what the product is in its first line, carries keywords, and links to the
+  issues, to the command line's repository and to its page on the index; the
+  pointer guard holds each of those links to the one address decided for it.
+  The repository's README and the distribution's open with the same summary.
+
 ## 0.3.3
 
 - A new distribution, `sayfirst-daemon`, holds the name of the daemon's

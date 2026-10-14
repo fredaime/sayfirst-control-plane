@@ -62,6 +62,23 @@ _TREE_FILE = re.compile(r"^https?://[^\s/]+/[^\s/]+/[^\s/]+/blob/[^\s/]+/(?P<pat
 
 DISTRIBUTIONS = tuple(sorted(item for item in (REPOSITORY / "packages").iterdir() if item.is_dir()))
 
+#: The three URLs every page of this repository's distributions carries, each
+#: into this repository.
+OWN_URLS = frozenset({"Repository", "Documentation", "Changelog"})
+
+#: Every other URL a page here may carry, and the one address each may hold:
+#: this repository's issues, and the client that asks this daemon — its
+#: repository and its page on the index. A closed table rather than a pattern,
+#: so a misspelt project name on the index, which would send a reader to a page
+#: anybody could register, is a failure here rather than a guess. The client's
+#: repository is named bare: this tree cannot see its files, so a path into it
+#: is one no guard here could resolve.
+CROSS_LINKS = {
+    "Issues": f"{PUBLIC_CONTROL_PLANE}/issues",
+    "Command line (sayfirst-cli)": PUBLIC_CLIENT,
+    "Command line on PyPI": "https://pypi.org/project/sayfirst-cli/",
+}
+
 
 def project_urls(package: Path) -> dict[str, str]:
     """The `[project.urls]` table of the distribution at `package`, or an empty one."""
@@ -145,10 +162,37 @@ def test_no_reader_facing_link_points_at_a_repository_that_is_never_published(pa
 @pytest.mark.parametrize("package", DISTRIBUTIONS, ids=lambda p: p.name)
 def test_every_published_url_of_every_distribution_is_the_public_repository(package: Path) -> None:
     """A package page is read by people who hold nothing of this project."""
-    urls = project_urls(package)
-    assert set(urls) == {"Repository", "Documentation", "Changelog"}, (package.name, urls)
-    for name, url in urls.items():
-        assert url.startswith(PUBLIC_CONTROL_PLANE), (package.name, name, url)
+    assert misdirected(project_urls(package)) == [], package.name
+
+
+def misdirected(urls: dict[str, str]) -> list[str]:
+    """Every entry of this table that sends a reader somewhere this module has not decided."""
+    found = [f"missing: {name}" for name in sorted(OWN_URLS - set(urls))]
+    for name, url in sorted(urls.items()):
+        if name in OWN_URLS:
+            if not url.startswith(PUBLIC_CONTROL_PLANE):
+                found.append(f"outside this repository: {name} = {url}")
+        elif CROSS_LINKS.get(name) != url:
+            found.append(f"undecided: {name} = {url}")
+    return found
+
+
+def test_the_package_named_for_the_control_plane_links_the_client() -> None:
+    """The page most people reach first sends them on to the command that asks."""
+    urls = project_urls(REPOSITORY / "packages" / "control-plane")
+    assert set(CROSS_LINKS) <= set(urls), urls
+
+
+def test_the_rule_fires_on_a_misspelt_page_of_the_index() -> None:
+    """WATCHED FIRING, on the cross-link that is easiest to get wrong: a project
+    name on the index that nobody here publishes."""
+    urls = {
+        **project_urls(REPOSITORY / "packages" / "control-plane"),
+        "Command line on PyPI": "https://pypi.org/project/sayfirstcli/",
+    }
+    assert misdirected(urls) == [
+        "undecided: Command line on PyPI = https://pypi.org/project/sayfirstcli/"
+    ]
 
 
 @pytest.mark.parametrize("package", DISTRIBUTIONS, ids=lambda p: p.name)
@@ -220,6 +264,7 @@ def test_the_rule_fires_on_a_project_url_outside_the_public_repository(tmp_path:
     urls = project_urls(package)
     assert urls, "the reader saw no table: the probe proves nothing"
     assert not all(url.startswith(PUBLIC_CONTROL_PLANE) for url in urls.values())
+    assert f"outside this repository: Repository = {urls['Repository']}" in misdirected(urls)
 
 
 def test_the_rule_fires_on_the_link_that_would_break_at_publication() -> None:
