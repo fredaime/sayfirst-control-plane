@@ -15,6 +15,13 @@ that this file does not announce under its own release fails the packaging test.
   issues, to the command line's repository and to its page on the index; the
   pointer guard holds each of those links to the one address decided for it.
   The repository's README and the distribution's open with the same summary.
+- Two documents say where sayfirst stands. `docs/COMPARISON.md` sets five
+  other projects, under the four names it was asked about, beside it, one
+  sourced cell per fact and "not documented" where their pages are silent, and
+  lists where sayfirst is weaker. `docs/EU-AI-ACT.md` says which parts of AI
+  Act Articles 12 and 14 the mechanism supports, how far and what stays with
+  the deployer, under the dates Regulation (EU) 2026/1744 set, and keeps the
+  constitution's article numbers apart from the Act's.
 
 ## 0.3.3
 
