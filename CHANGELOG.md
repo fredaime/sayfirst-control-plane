@@ -8,6 +8,11 @@ that this file does not announce under its own release fails the packaging test.
 
 ## Unreleased
 
+- The project has a landing page, `docs/site/index.html`, which
+  `.github/workflows/pages.yml` publishes to GitHub Pages: one static file with
+  no script, nothing loaded from another site and no cookie, light or dark from
+  the reader's setting. It says only what the READMEs and the quickstart say,
+  says what sayfirst is not, and shows the quickstart recording beside it.
 - The index pages of the eight distributions carry the classifiers that
   describe them — the audience, Linux and macOS, the topic — drawn from a
   vocabulary the metadata guard names and holds. `sayfirst-control-plane` says
