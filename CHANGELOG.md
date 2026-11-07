@@ -15,6 +15,14 @@ that this file does not announce under its own release fails the packaging test.
   issues, to the command line's repository and to its page on the index; the
   pointer guard holds each of those links to the one address decided for it.
   The repository's README and the distribution's open with the same summary.
+- `docs/demo/` holds a recording of a selection of the command line's
+  quickstart, run against 0.3.3 as published — a GIF and a WebM — with the tape
+  that types it, the image it is typed in, and `docs/demo/render.sh`. The
+  script renders it in an empty account from the package index and keeps it
+  only when the transcript shows, in order, an allow, a denial, a suspension
+  and its approval, the export with coverage unknown, and could not ask, and
+  the GIF is under 2 MB. The README beside it lists what the recording leaves
+  out and where it departs from the quickstart.
 
 ## 0.3.3
 
