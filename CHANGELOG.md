@@ -23,6 +23,13 @@ that this file does not announce under its own release fails the packaging test.
   and its approval, the export with coverage unknown, and could not ask, and
   the GIF is under 2 MB. The README beside it lists what the recording leaves
   out and where it departs from the quickstart.
+- Two documents say where sayfirst stands. `docs/COMPARISON.md` sets five
+  other projects, under the four names it was asked about, beside it, one
+  sourced cell per fact and "not documented" where their pages are silent, and
+  lists where sayfirst is weaker. `docs/EU-AI-ACT.md` says which parts of AI
+  Act Articles 12 and 14 the mechanism supports, how far and what stays with
+  the deployer, under the dates Regulation (EU) 2026/1744 set, and keeps the
+  constitution's article numbers apart from the Act's.
 
 ## 0.3.3
 
