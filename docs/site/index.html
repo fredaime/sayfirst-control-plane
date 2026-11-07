@@ -1,0 +1,292 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>sayfirst — ask before you act</title>
+<meta name="description" content="A local control plane an AI agent asks before it acts: allow, deny or suspend from a policy file a person can read. Open source, Apache-2.0.">
+<meta name="color-scheme" content="light dark">
+<meta property="og:title" content="sayfirst — ask before you act">
+<meta property="og:description" content="A local control plane an AI agent asks before it acts: allow, deny or suspend from a policy file a person can read.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://fredaime.github.io/sayfirst-control-plane/">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230e6b5c'/%3E%3Cpath d='M9 16.5l4.5 4.5L23 11.5' stroke='white' stroke-width='3.2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #f7f6f2;
+    --surface: #ffffff;
+    --ink: #1b1c1e;
+    --muted: #55585e;
+    --line: #dedbd3;
+    --accent: #0e6b5c;
+    --accent-ink: #ffffff;
+    --code-bg: #1d2024;
+    --code-ink: #e7e5df;
+    --code-muted: #8f949c;
+    --allow: #1d7a3e;
+    --deny: #b42318;
+    --suspend: #9a5b00;
+    --unasked: #4b4f9c;
+    --radius: 10px;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, "SFMono-Regular", "JetBrains Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #121417;
+      --surface: #1a1d21;
+      --ink: #ecebe6;
+      --muted: #a3a7ae;
+      --line: #2c3036;
+      --accent: #3fc0a6;
+      --accent-ink: #0b1512;
+      --code-bg: #22262c;
+      --code-ink: #e7e5df;
+      --code-muted: #8f949c;
+      --allow: #5cc77f;
+      --deny: #ff7b70;
+      --suspend: #f0b24a;
+      --unasked: #a5a9f5;
+    }
+  }
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 17px/1.6 var(--sans);
+  }
+  a { color: var(--accent); text-underline-offset: 3px; }
+  a:hover { text-decoration-thickness: 2px; }
+  a:focus-visible, video:focus-visible, pre.shell:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+  code, pre { font-family: var(--mono); }
+  code { font-size: 0.92em; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+  .skip { position: absolute; left: -9999px; }
+  .skip:focus { left: 16px; top: 16px; background: var(--surface); padding: 8px 12px; z-index: 10; }
+
+  header.top { border-bottom: 1px solid var(--line); }
+  header.top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 64px; flex-wrap: wrap; }
+  .mark { font: 700 1.15rem/1 var(--mono); color: var(--ink); text-decoration: none; letter-spacing: -0.01em; }
+  .mark span { color: var(--accent); }
+  nav.links { display: flex; gap: 20px; flex-wrap: wrap; font-size: 0.95rem; }
+  nav.links a { color: var(--muted); text-decoration: none; }
+  nav.links a:hover { color: var(--ink); }
+
+  .hero { padding-top: 56px; padding-bottom: 40px; }
+  .eyebrow { margin: 0 0 12px; color: var(--muted); font-size: 0.95rem; letter-spacing: 0.02em; }
+  h1 { margin: 0 0 18px; font-size: clamp(2.4rem, 6vw, 4rem); line-height: 1.05; letter-spacing: -0.03em; }
+  .lead { margin: 0 0 28px; max-width: 46rem; font-size: 1.15rem; color: var(--ink); }
+  .answers { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 28px; padding: 0; list-style: none; }
+  .answers li { font: 600 0.92rem/1 var(--mono); padding: 9px 12px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); }
+  .answers .allow { color: var(--allow); }
+  .answers .deny { color: var(--deny); }
+  .answers .suspend { color: var(--suspend); }
+  .answers .unasked { color: var(--unasked); }
+
+  pre.shell {
+    margin: 0 0 10px; padding: 18px 20px; overflow-x: auto;
+    background: var(--code-bg); color: var(--code-ink);
+    border-radius: var(--radius); font-size: 0.88rem; line-height: 1.7;
+  }
+  pre.shell .p { color: var(--code-muted); user-select: none; }
+  .actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 18px; }
+  .button { display: inline-block; padding: 11px 18px; border-radius: 8px; font-weight: 600; text-decoration: none; border: 1px solid var(--accent); }
+  .button.primary { background: var(--accent); color: var(--accent-ink); }
+  .button.secondary { color: var(--accent); background: transparent; }
+  .facts { margin: 0; color: var(--muted); font-size: 0.92rem; }
+  .who { margin: 0 0 24px; color: var(--muted); font-size: 0.92rem; }
+
+  section { padding: 44px 0; border-top: 1px solid var(--line); }
+  h2 { margin: 0 0 8px; font-size: 1.6rem; letter-spacing: -0.02em; line-height: 1.2; }
+  .intro { margin: 0 0 24px; color: var(--muted); max-width: 44rem; }
+
+  figure.demo { margin: 0; }
+  figure.demo video { display: block; width: 100%; height: auto; border-radius: var(--radius); background: var(--code-bg); border: 1px solid var(--line); }
+  figure.demo figcaption { margin-top: 10px; color: var(--muted); font-size: 0.92rem; }
+
+  .table-scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+  th, td { text-align: left; vertical-align: top; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+  tr:last-child td { border-bottom: 0; }
+  th { font-size: 0.85rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+  td.answer { font: 700 0.95rem var(--mono); white-space: nowrap; }
+  td.code { font-family: var(--mono); text-align: right; white-space: nowrap; }
+  .note { margin: 12px 0 0; color: var(--muted); font-size: 0.92rem; }
+
+  .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px 22px; }
+  .card h3 { margin: 0 0 6px; font-size: 1.05rem; }
+  .card p { margin: 0; color: var(--muted); }
+
+  .plain .card { border-left: 4px solid var(--suspend); }
+
+  ul.where { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+  ul.where li { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 20px; }
+  ul.where strong { font-family: var(--mono); }
+  ul.where .what { display: block; color: var(--muted); }
+  ul.read { margin: 20px 0 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 10px 22px; }
+
+  footer { border-top: 1px solid var(--line); padding: 28px 0 40px; color: var(--muted); font-size: 0.92rem; }
+  footer p { margin: 4px 0; }
+
+  @media (max-width: 720px) {
+    body { font-size: 16px; }
+    .wrap { padding: 0 16px; }
+    .hero { padding-top: 36px; padding-bottom: 28px; }
+    pre.shell { font-size: 0.8rem; padding: 14px 16px; }
+    .grid { grid-template-columns: 1fr; }
+    nav.links { gap: 14px; font-size: 0.9rem; }
+    th, td { padding: 10px 12px; }
+    td.answer { white-space: normal; }
+  }
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to the content</a>
+
+<header class="top">
+  <div class="wrap">
+    <a class="mark" href="https://github.com/fredaime/sayfirst-control-plane">say<span>first</span></a>
+    <nav class="links" aria-label="Project">
+      <a href="https://github.com/fredaime/sayfirst-cli/blob/main/QUICKSTART.md">Quickstart</a>
+      <a href="https://github.com/fredaime/sayfirst-control-plane/blob/main/docs/COMPARISON.md">Comparison</a>
+      <a href="https://github.com/fredaime/sayfirst-control-plane/blob/main/docs/EU-AI-ACT.md">EU AI Act</a>
+      <a href="https://github.com/fredaime/sayfirst-control-plane">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main id="main">
+  <div class="wrap hero">
+    <p class="eyebrow">Open-source runtime governance for AI agents</p>
+    <h1>Ask before you act.</h1>
+    <p class="lead">sayfirst is a local control plane that a program asks before an effect. The daemon answers allow, deny or suspend from a policy file a person can read, over a Unix socket that learns who is asking from the kernel; a suspension waits for a person, and every decision lands in a hash-chained record anyone can verify offline. No cloud account, no token, no port.</p>
+    <ul class="answers" aria-label="The answers a governed program can get">
+      <li class="allow">allow</li>
+      <li class="deny">deny</li>
+      <li class="suspend">suspend</li>
+      <li class="unasked">could not ask</li>
+    </ul>
+<pre class="shell" role="region" tabindex="0" aria-label="Three commands"><span class="p">$ </span>uv tool install sayfirst-cli --with-executables-from sayfirst-control-plane --with-executables-from sayfirstd
+<span class="p">$ </span>sayfirst-daemon up --quickstart
+<span class="p">$ </span>sayfirst instrument run --pack subprocess --scope local -- python3 my_agent.py</pre>
+    <p class="who"><code>sayfirst</code> is the client's command, from sayfirst-cli; <code>sayfirst-daemon</code> is the control plane, from sayfirst-control-plane.</p>
+    <div class="actions">
+      <a class="button primary" href="https://github.com/fredaime/sayfirst-cli/blob/main/QUICKSTART.md">Walk the quickstart</a>
+      <a class="button secondary" href="https://github.com/fredaime/sayfirst-control-plane">Source on GitHub</a>
+    </div>
+    <p class="facts">Apache-2.0 · version 0.3.3 on PyPI · <a href="https://github.com/fredaime/sayfirst-cli/blob/main/QUICKSTART.md#what-you-need">Linux or macOS, Python 3.12, 3.13 or 3.14</a></p>
+  </div>
+
+  <section aria-labelledby="recorded">
+    <div class="wrap">
+      <h2 id="recorded">The quickstart, recorded</h2>
+      <p class="intro">A selection of the quickstart, run against 0.3.3 as published, in an empty account: an allow, the same run denied by one word of the policy, a suspension and the person who approves it, the chain exported with coverage unknown, and the control plane stopped.</p>
+      <figure class="demo">
+        <video src="sayfirst.webm" autoplay muted loop playsinline controls preload="metadata" width="1360" height="600" aria-describedby="recorded-caption"></video>
+        <figcaption id="recorded-caption">Every command was typed into a real shell and every answer is the daemon's own. The same recording <a href="sayfirst.gif">as a GIF</a>; <a href="https://github.com/fredaime/sayfirst-control-plane/blob/main/docs/demo/README.md">what it shows, scene by scene, in text</a>; and <a href="https://github.com/fredaime/sayfirst-control-plane/tree/main/docs/demo">the tape that types it</a>.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section aria-labelledby="answers">
+    <div class="wrap">
+      <h2 id="answers">Three answers, and one more that is never confused with them</h2>
+      <p class="intro">The outcomes are closed at three. When nobody can be asked, that is said as such: it is never written as denied and never as allowed.</p>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th scope="col">Answer</th><th scope="col">What the program sees</th><th scope="col">Exit</th></tr></thead>
+          <tbody>
+            <tr><td class="answer" style="color: var(--allow)">allow</td><td>The effect goes ahead, and the decision is recorded.</td><td class="code">0</td></tr>
+            <tr><td class="answer" style="color: var(--deny)">deny</td><td>The effect never starts. The refusal is an exception raised inside the program, at the call — the program's to catch.</td><td class="code">1</td></tr>
+            <tr><td class="answer" style="color: var(--suspend)">suspend</td><td>Nothing runs: the call raises, and the request waits for a person until the deadline the policy sets. An approval authorises one execution; a rejection is a denial until that deadline.</td><td class="code">5</td></tr>
+            <tr><td class="answer" style="color: var(--unasked)">could not ask</td><td>No control plane answered. An effect that has not started does not start.</td><td class="code">4</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note">Exit codes of <code>sayfirst ask</code> and of <code>sayfirst instrument run</code> when a program lets the outcome escape; <code>3</code> means the request itself was refused.</p>
+    </div>
+  </section>
+
+  <section aria-labelledby="holds">
+    <div class="wrap">
+      <h2 id="holds">How it holds</h2>
+      <p class="intro">A governed program puts one question to a local control plane before it does anything that matters: may I do this, with these arguments, as this account?</p>
+      <div class="grid">
+        <div class="card">
+          <h3>Who is asking comes from the kernel</h3>
+          <p>The daemon listens on a Unix socket and nowhere else, and learns who is asking from the kernel's own peer credentials. No token, no port, nothing to leak.</p>
+        </div>
+        <div class="card">
+          <h3>The program never decides</h3>
+          <p>It asks, and does only what was allowed. The answer is held as a grant for exactly that question, and stops being honoured when its connection ends, its lifetime runs out, the policy it was issued under changes, or the control plane goes silent for a lifetime.</p>
+        </div>
+        <div class="card">
+          <h3>A person in the loop by construction</h3>
+          <p>An approval is one person's act, taken once, with the deadline the policy file sets. The allow it produces is the one execution that act authorised.</p>
+        </div>
+        <div class="card">
+          <h3>A record anyone can read back</h3>
+          <p>Every decision lands in a hash-chained record that a third party can read back and check offline, with the contract distribution alone and no daemon.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="plainly" class="plain">
+    <div class="wrap">
+      <h2 id="plainly">Said plainly</h2>
+      <p class="intro">What sayfirst is not, in its own words.</p>
+      <div class="grid">
+        <div class="card">
+          <h3>Not a sandbox</h3>
+          <p>A governed program calls the boundary; a program that does not call it is not governed, and nothing here stops it. Pair it with operating-system sandboxing for code you do not trust.</p>
+        </div>
+        <div class="card">
+          <h3>Graded observability, and no higher</h3>
+          <p>A deployment of this version is graded observability — the governed program can write or replace the evidence store, so the record it keeps is one that program could have forged — or unverified, which claims nothing. At neither grade is any claim of proof or of tamper detection made. A third grade, evidence, is defined, and no deployment of this version reaches it.</p>
+        </div>
+        <div class="card">
+          <h3>A mechanism, never a conformity</h3>
+          <p>sayfirst puts the question, answers it from a policy file, and records the answer. It makes no deployment compliant with any law or standard; <a href="https://github.com/fredaime/sayfirst-control-plane/blob/main/docs/EU-AI-ACT.md">the EU AI Act page</a> says what it supports and what it leaves to you.</p>
+        </div>
+        <div class="card">
+          <h3>One host, one approver, Python</h3>
+          <p>No fleet, no tenancy, no console. One person approves or rejects a wait; approval by two people is not in the open core. The boundary, and the packs the client ships, are for Python programs.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="where">
+    <div class="wrap">
+      <h2 id="where">Where things are</h2>
+      <p class="intro">Three repositories, every distribution at 0.3.3 on the package index.</p>
+      <ul class="where">
+        <li><strong>sayfirst-control-plane</strong> <span class="what">The daemon, the contract, the boundary, the policy format, the evidence chain.</span> <a href="https://github.com/fredaime/sayfirst-control-plane">GitHub</a> · <a href="https://pypi.org/project/sayfirst-control-plane/">PyPI</a></li>
+        <li><strong>sayfirst-cli</strong> <span class="what">The <code>sayfirst</code> command: ask, trace, explain, evidence, approvals, instrument, packs.</span> <a href="https://github.com/fredaime/sayfirst-cli">GitHub</a> · <a href="https://pypi.org/project/sayfirst-cli/">PyPI</a></li>
+        <li><strong>sayfirst-governed-agent-demo</strong> <span class="what">An agent governed end to end, four capabilities and four answers set in one policy file — the demonstrator, not a product.</span> <a href="https://github.com/fredaime/sayfirst-governed-agent-demo">GitHub</a></li>
+      </ul>
+      <ul class="read" aria-label="Documents">
+        <li><a href="https://github.com/fredaime/sayfirst-cli/blob/main/QUICKSTART.md">Quickstart</a></li>
+        <li><a href="https://github.com/fredaime/sayfirst-control-plane/blob/main/SECURITY.md">Security and the grades</a></li>
+        <li><a href="https://github.com/fredaime/sayfirst-control-plane/blob/main/CONSTITUTION.md">Constitution</a></li>
+        <li><a href="https://github.com/fredaime/sayfirst-control-plane/blob/main/docs/deployment.md">Deployment</a></li>
+        <li><a href="https://github.com/fredaime/sayfirst-control-plane/blob/main/docs/COMPARISON.md">Comparison</a></li>
+        <li><a href="https://github.com/fredaime/sayfirst-control-plane/blob/main/docs/EU-AI-ACT.md">EU AI Act</a></li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>sayfirst is open source under the Apache License 2.0. This page loads nothing from any other site and sets no cookie.</p>
+    <p>Enterprise support: <a href="mailto:frederic.aime@gmail.com">contact</a></p>
+  </div>
+</footer>
+</body>
+</html>

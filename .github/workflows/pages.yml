@@ -1,0 +1,53 @@
+# SPDX-License-Identifier: Apache-2.0
+name: pages
+
+# Publishes the project's landing page, https://fredaime.github.io/sayfirst-control-plane/.
+# There is nothing to build: the site is `docs/site/index.html` as written, and
+# the quickstart recording it shows is copied beside it from `docs/demo/`. The
+# job runs no part of the suite, publishes nothing to the package index, and
+# needs the repository's Pages source set to GitHub Actions.
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "docs/site/**"
+      - "docs/demo/sayfirst.gif"
+      - "docs/demo/sayfirst.webm"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      # The whole history, as every checkout in this repository takes it
+      # (tests/test_public_gate_runs_the_suite.py holds every workflow to that).
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Assemble the site
+        run: |
+          mkdir -p _site
+          cp docs/site/index.html _site/
+          cp docs/demo/sayfirst.webm docs/demo/sayfirst.gif _site/
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v5
